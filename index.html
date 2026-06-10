@@ -560,6 +560,16 @@
       </div>
     </div>
 
+    <!-- REPRODUCTOR EMBEBIDO DE SPOTIFY (completo con Premium; adelanto para el resto) -->
+    <div id="spotify-player" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md hidden">
+      <button onclick="closeSpotifyPlayer()" title="Cerrar reproductor" class="absolute -top-2.5 -right-2.5 z-50 w-7 h-7 rounded-full bg-zinc-700 border border-zinc-500 text-white flex items-center justify-center shadow-xl active:scale-95">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <iframe id="spotify-player-frame" title="Reproductor de Spotify" style="border-radius:14px" width="100%" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    </div>
+
     <!-- NAV BAR FLOTANTE INFERIOR -->
     <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md bg-zinc-950/95 border border-zinc-900/80 backdrop-blur-2xl px-4 py-2.5 rounded-full shadow-2xl flex justify-between items-center">
       <button 
@@ -859,6 +869,7 @@
       document.getElementById('login-screen').classList.remove('hidden');
       document.getElementById('app-screen').classList.add('hidden');
       stopPlayback();
+      closeSpotifyPlayer();
     }
 
     function isAdmin() {
@@ -1692,10 +1703,21 @@
             ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />'
             : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />');
 
+        const playOverlay = track.genre === 'Spotify' ? `
+          <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="absolute inset-0 bg-black/35 flex items-center justify-center text-white">
+            <svg class="w-4 h-4 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+        ` : '';
+
         resultsContainer.innerHTML += `
           <div class="flex items-center justify-between gap-3 p-2.5 hover:bg-zinc-900/30 rounded-2xl transition animate-fadeIn">
             <div class="flex items-center gap-3 min-w-0">
-              <img src="${track.coverUrl}" alt="Cover" class="w-10 h-10 object-cover rounded-xl bg-zinc-900 flex-none" />
+              <div class="relative w-10 h-10 rounded-xl overflow-hidden bg-zinc-900 flex-none">
+                <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
+                ${playOverlay}
+              </div>
               <div class="min-w-0">
                 <h4 class="text-xs font-bold text-zinc-200 truncate">${escapeHtml(track.title)}</h4>
                 <p class="text-[10px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
@@ -1944,7 +1966,12 @@
           myVotesBox.innerHTML += `
             <div class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-900/20 rounded-xl transition">
               <div class="flex items-center gap-3 min-w-0">
-                <img src="${song.coverUrl}" alt="Cover" class="w-9 h-9 rounded-lg object-cover bg-zinc-800" />
+                <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" class="relative w-9 h-9 rounded-lg overflow-hidden bg-zinc-800 flex-none">
+                  <img src="${song.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
+                  <span class="absolute inset-0 bg-black/35 flex items-center justify-center text-white">
+                    <svg class="w-3.5 h-3.5 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </span>
+                </button>
                 <div class="min-w-0">
                   <h4 class="text-xs font-bold text-zinc-200 truncate">${escapeHtml(song.title)}</h4>
                   <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
@@ -2098,6 +2125,27 @@
     }
 
     // ==========================================
+    // REPRODUCTOR EMBEBIDO DE SPOTIFY
+    // Invitados con sesión Premium en el navegador escuchan la canción
+    // completa dentro de CatApp; el resto, un adelanto de 30 segundos
+    // ==========================================
+    function openSpotifyPlayer(spotifyId) {
+      stopPlayback();
+      const panel = document.getElementById('spotify-player');
+      const frame = document.getElementById('spotify-player-frame');
+      if (!panel || !frame) return;
+      frame.src = `https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0`;
+      panel.classList.remove('hidden');
+    }
+
+    function closeSpotifyPlayer() {
+      const panel = document.getElementById('spotify-player');
+      const frame = document.getElementById('spotify-player-frame');
+      if (frame) frame.src = '';
+      if (panel) panel.classList.add('hidden');
+    }
+
+    // ==========================================
     // REPRODUCTOR: PREVIEW REAL DE SPOTIFY + SINTETIZADOR DE RESPALDO
     // ==========================================
     function toggleTrackPlayback(trackId) {
@@ -2110,6 +2158,13 @@
       const track = songs.find(s => s.id === trackId)
         || (detectedSong && detectedSong.id === trackId ? detectedSong : null);
       if (!track) return;
+
+      // Canciones reales de Spotify: se escuchan en el reproductor embebido
+      const spotifyId = track.spotifyId || (track.genre === 'Spotify' ? track.id : null);
+      if (spotifyId) {
+        openSpotifyPlayer(spotifyId);
+        return;
+      }
 
       if (track.previewUrl) {
         playPreview(track);
