@@ -224,7 +224,7 @@
       <span class="text-[8px] text-zinc-650 uppercase tracking-widest font-extrabold">Invitaciones Rápidas de Prueba:</span>
       <div class="flex gap-2">
         <button onclick="fillDemoCode('FIESTA-15', 'Santi')" class="px-3 py-1 rounded-lg bg-zinc-950/80 border border-zinc-900 text-[9px] font-mono text-zinc-500 hover:text-white transition">FIESTA-15</button>
-        <button onclick="fillDemoCode('VALE-15', 'Cata')" class="px-3 py-1 rounded-lg bg-zinc-950/80 border border-zinc-900 text-[9px] font-mono text-zinc-500 hover:text-white transition">VALE-15</button>
+        <button onclick="fillDemoCode('CATA-ADMIN', 'Cata')" class="px-3 py-1 rounded-lg bg-zinc-950/80 border border-zinc-900 text-[9px] font-mono text-zinc-500 hover:text-white transition">CATA-ADMIN</button>
       </div>
     </div>
   </div>
@@ -264,8 +264,11 @@
       </div>
     </header>
 
-    <!-- VISTA 1: SOUNDTRACK (PLAYLIST DE LA FIESTA) -->
+    <!-- VISTA 1: RANKING DE VOTOS (SOLO CATA Y ADMINS) -->
     <div id="tab-soundtrack" class="tab-content space-y-6">
+      <!-- Estadísticas para el DJ: totales y votos por invitado -->
+      <div id="admin-stats" class="space-y-3"></div>
+
       <div id="top-song-banner" class="relative rounded-3xl overflow-hidden p-[1px] bg-gradient-to-r from-zinc-800 via-zinc-400 to-zinc-900 shadow-xl">
         <!-- Render dinámico de la más votada -->
       </div>
@@ -274,7 +277,7 @@
         <div class="flex justify-between items-center px-1">
           <h3 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-zinc-400 animate-pulse"></span>
-            SOUNDTRACK DEL BOLICHE
+            RANKING DE VOTOS
           </h3>
           <span id="songs-count" class="text-[9px] text-zinc-400 bg-zinc-950/80 border border-zinc-900 px-2.5 py-0.5 rounded-full font-mono font-bold">
             0 Temas
@@ -436,7 +439,7 @@
         </div>
         <div class="text-right">
           <span id="profile-contributions" class="text-2xl font-black text-zinc-300 font-mono block leading-none">0</span>
-          <span class="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">Aportados</span>
+          <span class="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">Mis Votos</span>
         </div>
       </div>
 
@@ -451,6 +454,14 @@
         
         <div id="suggestions-carousel" class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x no-scrollbar">
           <!-- Carrusel de canciones sugeridas -->
+        </div>
+      </div>
+
+      <!-- Mis Votos -->
+      <div class="space-y-3">
+        <h3 class="text-xs tracking-wider text-zinc-500 uppercase font-extrabold">Mis Votos</h3>
+        <div id="my-votes-container" class="space-y-2">
+          <!-- Canciones que voté -->
         </div>
       </div>
 
@@ -542,7 +553,7 @@
               onclick="addDetectedSong()" 
               class="flex-1 bg-white text-black font-bold text-xs py-3 rounded-xl transition shadow-xl active:scale-95"
             >
-              Añadir a la Lista
+              Votar este Tema
             </button>
           </div>
         </div>
@@ -559,7 +570,7 @@
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        <span class="text-[9px] font-bold tracking-wide">Soundtrack</span>
+        <span class="text-[9px] font-bold tracking-wide">Ranking</span>
       </button>
 
       <button 
@@ -627,6 +638,14 @@
     // (cada teléfono guarda su propia lista), igual que antes.
     const SUPABASE_URL = '';      // ej: 'https://abcdefghijkl.supabase.co'
     const SUPABASE_ANON_KEY = ''; // la clave "anon public" del proyecto
+
+    // ==========================================
+    // CÓDIGOS DE ADMINISTRADOR (CATA, DJ, ORGANIZADORES)
+    // ==========================================
+    // Quien entre con uno de estos códigos ve el ranking de votos, quién votó
+    // cada tema y las estadísticas para el DJ. Los invitados comunes solo
+    // buscan y votan, sin ver resultados. ¡Mantené estos códigos en secreto!
+    const ADMIN_CODES = ['CATA-ADMIN', 'DJ-CATA'];
 
     // BASE DE DATOS MOCK DE RESPALDO (VINCULADO AL RITMO DE LA FIESTA DE CATA)
     const SPOTIFY_CATALOG = [
@@ -842,18 +861,31 @@
       stopPlayback();
     }
 
+    function isAdmin() {
+      return !!(currentUser && ADMIN_CODES.includes(currentUser.code));
+    }
+
     function showApp() {
       document.getElementById('login-screen').classList.add('hidden');
       document.getElementById('app-screen').classList.remove('hidden');
-      
+
       document.getElementById('user-display-name').innerText = currentUser.name;
-      document.getElementById('user-display-code').innerText = currentUser.code;
+      document.getElementById('user-display-code').innerText = currentUser.code + (isAdmin() ? ' · ADMIN' : '');
       document.getElementById('profile-name').innerText = currentUser.name;
       document.getElementById('profile-code').innerText = currentUser.code;
       document.getElementById('profile-avatar').innerText = currentUser.name.charAt(0).toUpperCase();
 
+      // Los invitados no ven el ranking ni importan playlists: solo votan.
+      // El ranking, los votos por invitado y las estadísticas son de los admins.
+      document.getElementById('nav-soundtrack').classList.toggle('hidden', !isAdmin());
+      document.getElementById('btn-search-playlist').classList.toggle('hidden', !isAdmin());
+      document.getElementById('spotify-api-status-banner').classList.toggle('hidden', !isAdmin());
+      const searchLabel = document.querySelector('#nav-search span');
+      if (searchLabel) searchLabel.innerText = isAdmin() ? 'Añadir' : 'Votar';
+      if (!isAdmin() && currentSearchMode === 'playlist') setSearchMode('spotify');
+
       updateSpotifyBannerUI();
-      switchTab('soundtrack');
+      switchTab(isAdmin() ? 'soundtrack' : 'search');
     }
 
     // ==========================================
@@ -1144,16 +1176,18 @@
         coverUrl: row.cover_url,
         previewUrl: row.preview_url,
         genre: row.genre,
+        spotifyId: row.spotify_id,
         addedBy: row.added_by,
         addedById: row.added_by_id,
         addedAt: new Date(row.created_at).getTime(),
         votes: voters.length,
-        voters: voters
+        voters: voters,
+        voterNames: (row.votes || []).map(v => v.guest_name || 'Invitado')
       };
     }
 
     async function loadPartySongs() {
-      const { data, error } = await sb.from('songs').select('*, votes(guest_id)');
+      const { data, error } = await sb.from('songs').select('*, votes(guest_id, guest_name)');
       if (error) {
         console.error("Error al cargar la lista compartida:", error);
         showToast("No se pudo actualizar la lista compartida.", "warning");
@@ -1214,13 +1248,23 @@
     }
 
     // Alta de canción unificada para ambos modos (búsqueda, sugerencias,
-    // import de playlist y detección por micrófono)
+    // import de playlist y detección por micrófono).
+    // Si la canción ya estaba pedida por otro invitado, se suma el voto en
+    // lugar de duplicarla. Devuelve 'added', 'voted' o false.
     async function addSongRecord(track, options = {}) {
       const silent = options.silent === true;
 
-      if (songs.some(s => s.title.toLowerCase() === track.title.toLowerCase())) {
-        if (!silent) showToast("Esa canción ya está en el soundtrack.", "warning");
-        return false;
+      const existing = songs.find(s =>
+        s.title.toLowerCase() === track.title.toLowerCase() ||
+        (track.genre === 'Spotify' && s.spotifyId && s.spotifyId === track.id)
+      );
+      if (existing) {
+        if (existing.voters && existing.voters.includes(currentUser.id)) {
+          if (!silent) showToast("Ya votaste esa canción.", "warning");
+          return false;
+        }
+        await voteSong(existing.id, { silent: true });
+        return 'voted';
       }
 
       if (isSharedMode()) {
@@ -1237,12 +1281,19 @@
         }).select('*, votes(guest_id)').single();
 
         if (error) {
-          // 23505 = violación de unicidad: otro invitado la agregó hace un instante
+          // 23505 = violación de unicidad: otro invitado la agregó hace un
+          // instante. Recargamos la lista y le sumamos el voto.
           if (error.code === '23505') {
-            if (!silent) showToast("Esa canción ya está en el soundtrack.", "warning");
+            await loadPartySongs();
+            const dup = songs.find(s => s.title.toLowerCase() === track.title.toLowerCase());
+            if (dup && !(dup.voters || []).includes(currentUser.id)) {
+              await voteSong(dup.id, { silent: true });
+              return 'voted';
+            }
+            if (!silent) showToast("Esa canción ya está pedida.", "warning");
           } else {
             console.error("Error al guardar la canción:", error);
-            showToast("No se pudo guardar en la lista compartida. Intenta de nuevo.", "error");
+            showToast("No se pudo guardar tu voto. Intenta de nuevo.", "error");
           }
           return false;
         }
@@ -1250,13 +1301,14 @@
         const newSong = mapDbSong(data);
         newSong.votes = 1;
         newSong.voters = [currentUser.id];
+        newSong.voterNames = [currentUser.name];
         songs.push(newSong);
 
         // El voto propio se registra aparte; si falla, el refresco lo corrige
-        sb.from('votes').insert({ song_id: data.id, guest_id: currentUser.id })
+        sb.from('votes').insert({ song_id: data.id, guest_id: currentUser.id, guest_name: currentUser.name })
           .then(({ error: voteError }) => { if (voteError) schedulePartyRefresh(); });
 
-        return true;
+        return 'added';
       }
 
       songs.push({
@@ -1266,23 +1318,27 @@
         album: track.album || "Sencillo",
         coverUrl: track.coverUrl,
         previewUrl: track.previewUrl || null,
+        spotifyId: track.genre === 'Spotify' ? track.id : null,
         addedBy: currentUser.name,
         addedById: currentUser.id,
         addedAt: Date.now(),
         votes: 1,
         voters: [currentUser.id],
+        voterNames: [currentUser.name],
         genre: track.genre || "Pop"
       });
       saveSongsToStorage();
-      return true;
+      return 'added';
     }
 
     // ==========================================
     // CAMBIAR PESTAÑAS (TAB SYSTEM)
     // ==========================================
     function switchTab(tabId) {
+      // El ranking es exclusivo de los admins
+      if (tabId === 'soundtrack' && !isAdmin()) tabId = 'search';
       activeTab = tabId;
-      
+
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
       document.getElementById('tab-' + tabId).classList.remove('hidden');
 
@@ -1299,6 +1355,9 @@
           navButtons[key].className = "flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 text-zinc-500 hover:text-zinc-300";
         }
       });
+
+      // Reasignar className borra la clase hidden: el ranking sigue siendo solo de admins
+      navButtons.soundtrack.classList.toggle('hidden', !isAdmin());
 
       renderAll();
     }
@@ -1320,7 +1379,63 @@
     // ==========================================
     // RENDERS DE LA COLA GLOBAL (SOUNDTRACK)
     // ==========================================
+    // Panel exclusivo de admins: totales y detalle de votos por invitado
+    function renderAdminStats() {
+      const statsBox = document.getElementById('admin-stats');
+      if (!statsBox) return;
+
+      if (!isAdmin()) {
+        statsBox.innerHTML = '';
+        return;
+      }
+
+      const totalVotes = songs.reduce((acc, s) => acc + (s.votes || 0), 0);
+      const byGuest = {};
+      songs.forEach(s => {
+        (s.voters || []).forEach((guestId, i) => {
+          if (!byGuest[guestId]) {
+            byGuest[guestId] = { name: (s.voterNames || [])[i] || 'Invitado', titles: [] };
+          }
+          byGuest[guestId].titles.push(s.title);
+        });
+      });
+      const guests = Object.values(byGuest).sort((a, b) => b.titles.length - a.titles.length);
+
+      statsBox.innerHTML = `
+        <div class="grid grid-cols-3 gap-2">
+          <div class="bg-zinc-950/80 border border-zinc-900 rounded-2xl p-3 text-center">
+            <span class="text-xl font-black text-white font-mono block">${songs.length}</span>
+            <span class="text-[8px] text-zinc-500 uppercase font-bold tracking-wider">Temas</span>
+          </div>
+          <div class="bg-zinc-950/80 border border-zinc-900 rounded-2xl p-3 text-center">
+            <span class="text-xl font-black text-white font-mono block">${totalVotes}</span>
+            <span class="text-[8px] text-zinc-500 uppercase font-bold tracking-wider">Votos</span>
+          </div>
+          <div class="bg-zinc-950/80 border border-zinc-900 rounded-2xl p-3 text-center">
+            <span class="text-xl font-black text-white font-mono block">${guests.length}</span>
+            <span class="text-[8px] text-zinc-500 uppercase font-bold tracking-wider">Votantes</span>
+          </div>
+        </div>
+
+        <details class="bg-zinc-950/80 border border-zinc-900 rounded-2xl overflow-hidden">
+          <summary class="px-4 py-3 text-[10px] tracking-[0.2em] text-zinc-400 uppercase font-extrabold cursor-pointer select-none">
+            Votos por invitado (${guests.length})
+          </summary>
+          <div class="px-4 pb-3 space-y-2 max-h-56 overflow-y-auto no-scrollbar">
+            ${guests.length === 0 ? '<p class="text-xs text-zinc-600 font-serif">Todavía no hay votos.</p>' : guests.map(g => `
+              <div class="border-t border-zinc-900 pt-2">
+                <p class="text-xs font-bold text-zinc-200">${escapeHtml(g.name)} <span class="text-zinc-500 font-mono">· ${g.titles.length} ${g.titles.length === 1 ? 'voto' : 'votos'}</span></p>
+                <p class="text-[10px] text-zinc-500 leading-relaxed">${escapeHtml(g.titles.join(' · '))}</p>
+              </div>
+            `).join('')}
+          </div>
+        </details>
+      `;
+    }
+
     function renderSoundtrack() {
+      renderAdminStats();
+
       const sorted = [...songs].sort((a, b) => b.votes - a.votes);
       document.getElementById('songs-count').innerText = `${songs.length} Temas`;
 
@@ -1430,11 +1545,12 @@
       });
     }
 
-    async function voteSong(songId) {
+    async function voteSong(songId, options = {}) {
       const song = songs.find(s => s.id === songId);
       if (!song) return;
 
       if (!song.voters) song.voters = [];
+      if (!song.voterNames) song.voterNames = [];
 
       // Actualización optimista: la interfaz responde al instante y el
       // servidor confirma (o el refresco en vivo corrige) después
@@ -1442,12 +1558,14 @@
       const hadVoted = idx !== -1;
       if (hadVoted) {
         song.voters.splice(idx, 1);
+        song.voterNames.splice(idx, 1);
         song.votes = Math.max(0, song.votes - 1);
-        showToast("Voto cancelado.", "info");
+        if (!options.silent) showToast("Voto cancelado.", "info");
       } else {
         song.voters.push(currentUser.id);
+        song.voterNames.push(currentUser.name);
         song.votes += 1;
-        showToast("¡Votado para la fiesta!", "success");
+        if (!options.silent) showToast("¡Votado para la fiesta!", "success");
       }
 
       saveSongsToStorage();
@@ -1456,7 +1574,7 @@
       if (isSharedMode()) {
         const { error } = hadVoted
           ? await sb.from('votes').delete().eq('song_id', songId).eq('guest_id', currentUser.id)
-          : await sb.from('votes').insert({ song_id: songId, guest_id: currentUser.id });
+          : await sb.from('votes').insert({ song_id: songId, guest_id: currentUser.id, guest_name: currentUser.name });
         if (error) {
           console.error("Error al registrar el voto:", error);
           schedulePartyRefresh();
@@ -1560,8 +1678,19 @@
       resultsContainer.innerHTML = '';
 
       tracks.forEach((track, index) => {
-        const isAdded = songs.some(s => s.title.toLowerCase() === track.title.toLowerCase());
+        // Si ya está pedida, el botón suma un voto; si ya la votaste, queda tildada
+        const existing = songs.find(s =>
+          s.title.toLowerCase() === track.title.toLowerCase() ||
+          (track.genre === 'Spotify' && s.spotifyId && s.spotifyId === track.id)
+        );
+        const votedByMe = !!(existing && existing.voters && existing.voters.includes(currentUser.id));
         window[`track_search_${index}`] = track;
+
+        const icon = votedByMe
+          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />'
+          : (existing
+            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />'
+            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />');
 
         resultsContainer.innerHTML += `
           <div class="flex items-center justify-between gap-3 p-2.5 hover:bg-zinc-900/30 rounded-2xl transition animate-fadeIn">
@@ -1573,14 +1702,15 @@
               </div>
             </div>
 
-            <button 
+            <button
               onclick="addSongFromSearch(${index})"
-              ${isAdded ? 'disabled' : ''}
+              ${votedByMe ? 'disabled' : ''}
+              title="${votedByMe ? 'Ya la votaste' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
               class="p-2 rounded-xl transition shrink-0"
-              style="background-color: ${isAdded ? 'rgba(24, 24, 27, 0.4)' : '#18181b'}; color: ${isAdded ? '#52525b' : '#ffffff'}; cursor: ${isAdded ? 'not-allowed' : 'pointer'}"
+              style="background-color: ${votedByMe ? 'rgba(24, 24, 27, 0.4)' : '#18181b'}; color: ${votedByMe ? '#52525b' : '#ffffff'}; cursor: ${votedByMe ? 'not-allowed' : 'pointer'}"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                ${isAdded ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />'}
+                ${icon}
               </svg>
             </button>
           </div>
@@ -1592,11 +1722,13 @@
       const track = window[`track_search_${globalIndex}`];
       if (!track) return;
 
-      if (await addSongRecord(track)) {
-        showToast(`"${track.title}" añadida al soundtrack.`, "success");
-        document.getElementById('spotify-input').value = '';
-        switchTab('soundtrack');
+      const result = await addSongRecord(track);
+      if (result === 'added') {
+        showToast(`"${track.title}" pedida y votada. ¡El DJ la tendrá en cuenta!`, "success");
+      } else if (result === 'voted') {
+        showToast(`¡Le sumaste tu voto a "${track.title}"!`, "success");
       }
+      if (result) renderAll();
     }
 
     // ==========================================
@@ -1761,7 +1893,8 @@
     // ==========================================
     function renderProfile() {
       const mine = songs.filter(s => s.addedById === currentUser.id);
-      document.getElementById('profile-contributions').innerText = mine.length;
+      const myVotes = songs.filter(s => s.voters && s.voters.includes(currentUser.id));
+      document.getElementById('profile-contributions').innerText = myVotes.length;
 
       const carousel = document.getElementById('suggestions-carousel');
       carousel.innerHTML = '';
@@ -1786,15 +1919,52 @@
               <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
             </div>
 
-            <button 
+            <button
               onclick="addSongFromSuggest(${index})"
               class="w-full py-2 rounded-xl text-[9px] bg-zinc-900 hover:bg-white hover:text-black transition font-bold tracking-wider uppercase border border-zinc-800"
             >
-              Añadir
+              Votar
             </button>
           </div>
         `;
       });
+
+      // Mis Votos: las canciones que voté, con opción de retirar el voto
+      const myVotesBox = document.getElementById('my-votes-container');
+      myVotesBox.innerHTML = '';
+
+      if (myVotes.length === 0) {
+        myVotesBox.innerHTML = `
+          <div class="p-8 text-center bg-zinc-900/10 rounded-2xl border border-zinc-900 border-dashed">
+            <p class="text-xs text-zinc-500 font-serif">Todavía no votaste canciones. ¡Buscá tus favoritas y votá!</p>
+          </div>
+        `;
+      } else {
+        myVotes.forEach(song => {
+          myVotesBox.innerHTML += `
+            <div class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-900/20 rounded-xl transition">
+              <div class="flex items-center gap-3 min-w-0">
+                <img src="${song.coverUrl}" alt="Cover" class="w-9 h-9 rounded-lg object-cover bg-zinc-800" />
+                <div class="min-w-0">
+                  <h4 class="text-xs font-bold text-zinc-200 truncate">${escapeHtml(song.title)}</h4>
+                  <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
+                </div>
+              </div>
+
+              <button
+                onclick="voteSong('${song.id}')"
+                title="Quitar mi voto"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/30 text-white transition active:scale-95 shrink-0"
+              >
+                <svg class="w-3.5 h-3.5 fill-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span class="text-[9px] font-bold uppercase tracking-wide">Votada</span>
+              </button>
+            </div>
+          `;
+        });
+      }
 
       const mySongsBox = document.getElementById('my-songs-container');
       mySongsBox.innerHTML = '';
@@ -1840,10 +2010,13 @@
     }
 
     async function addSongFromTrack(track) {
-      if (await addSongRecord(track)) {
-        showToast(`"${track.title}" añadida con éxito!`, "success");
-        switchTab('soundtrack');
+      const result = await addSongRecord(track);
+      if (result === 'added') {
+        showToast(`"${track.title}" pedida y votada. ¡El DJ la tendrá en cuenta!`, "success");
+      } else if (result === 'voted') {
+        showToast(`¡Le sumaste tu voto a "${track.title}"!`, "success");
       }
+      if (result) renderAll();
     }
 
     async function deleteMySong(songId) {

@@ -24,10 +24,12 @@ create unique index if not exists songs_spotify_id_unico
 create unique index if not exists songs_titulo_unico
   on public.songs (lower(title));
 
--- Votos: un voto por invitado (teléfono) por canción
+-- Votos: un voto por invitado (teléfono) por canción.
+-- guest_name se guarda para que los admins vean quién votó qué.
 create table if not exists public.votes (
   song_id uuid not null references public.songs(id) on delete cascade,
   guest_id text not null,
+  guest_name text,
   created_at timestamptz not null default now(),
   primary key (song_id, guest_id)
 );
