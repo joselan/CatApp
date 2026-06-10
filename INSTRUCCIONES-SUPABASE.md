@@ -1,6 +1,6 @@
 # CatApp — Activar el modo fiesta compartida (Supabase)
 
-Con esto los **300 invitados** usan la app completa: buscan en el catálogo
+Con esto los **175 invitados** (91 invitaciones) usan la app completa: buscan en el catálogo
 **real** de Spotify (sin loguearse con Spotify) y la playlist, los votos y los
 pedidos se comparten **en vivo entre todos los teléfonos**.
 
