@@ -28,3 +28,11 @@
   clave, etc.), contame brevemente para qué sirve.
 - **Avisá si algo es irreversible o sensible** (borrar datos, exponer claves, etc.)
   antes de hacerlo.
+
+## Pendientes del proyecto CatApp
+
+- **Activar Supabase** (modo fiesta compartida): seguir los 5 pasos de
+  `INSTRUCCIONES-SUPABASE.md` cuando José esté en la computadora. Al
+  terminar, José pasa la Project URL y la clave anon para pegarlas en
+  `index.html` y publicar. Hasta entonces, cada teléfono guarda su
+  propia lista (modo local).
