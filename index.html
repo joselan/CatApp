@@ -18,7 +18,10 @@
 
   <!-- Supabase JS: playlist compartida en vivo entre todos los invitados -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
+
+  <!-- Google Identity Services: acceso de administradores con cuenta de Google -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <!-- Google Fonts idénticas a la invitación física -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Alex+Brush&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
@@ -172,7 +175,7 @@
     <!-- TEXTOS DEL SAVE THE DATE (siempre visibles, bien arriba sobre la imagen) -->
     <div id="html-replica-header" class="text-center -mt-6 w-full relative z-10">
       <span class="text-[11px] tracking-[0.45em] font-serif text-zinc-100 font-bold uppercase text-glow">MIS XV</span>
-      <h1 class="text-7xl font-cursive text-white tracking-wide mt-1 mb-2 select-none text-glow">Cata</h1>
+      <h1 onclick="handleSecretTap()" class="text-7xl font-cursive text-white tracking-wide mt-1 mb-2 select-none text-glow cursor-default">Cata</h1>
       <p class="text-lg font-serif tracking-[0.3em] text-white font-semibold text-glow">11.09.26</p>
     </div>
 
@@ -226,6 +229,21 @@
       </form>
     </div>
 
+  </div>
+
+  <!-- MODAL: ACCESO DE ADMINISTRADORES (5 toques sobre "Cata" en el login) -->
+  <div id="admin-login-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 hidden">
+    <div class="w-full max-w-sm bg-zinc-900/95 border border-zinc-700 p-6 rounded-3xl space-y-5 shadow-2xl text-center relative">
+      <button onclick="closeAdminLogin()" class="absolute top-4 right-4 p-2 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white transition">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      <h3 class="text-[10px] tracking-[0.25em] text-zinc-400 uppercase font-extrabold">Acceso de Administradores</h3>
+      <p class="text-xs text-zinc-300 leading-relaxed">Entrá con tu cuenta de Google autorizada<br>(José, Cata, Seba o Mari).</p>
+      <div id="google-btn-container" class="flex justify-center min-h-[44px]"></div>
+      <p id="admin-login-status" class="text-[10px] text-zinc-500 leading-relaxed"></p>
+    </div>
   </div>
 
   <!-- ==========================================
@@ -730,6 +748,21 @@
     const ADMIN_CODES = ['JOSE-K84M', 'CATA-R29Q', 'SEBA-T63V', 'MARI-P47X'];
 
     // ==========================================
+    // ACCESO DE ADMINS CON GOOGLE (5 TOQUES SOBRE "Cata")
+    // ==========================================
+    // Tocando 5 veces el nombre "Cata" en la pantalla de entrada se abre el
+    // acceso con cuenta de Google. Solo entran estos 4 mails:
+    const ADMIN_EMAILS = [
+      'joselanglois@gmail.com',
+      'catalinagodoy831@gmail.com',
+      'sgodoy608@gmail.com',
+      'mariaisabel218@gmail.com'
+    ];
+    // Client ID de Google (gratis): pasos en INSTRUCCIONES-GOOGLE.md.
+    // Mientras esté vacío, los admins entran con su código de respaldo.
+    const GOOGLE_CLIENT_ID = '';
+
+    // ==========================================
     // REGLAS DE LA VOTACIÓN (EDITABLES)
     // ==========================================
     // Códigos generales de invitado (van en la invitación). Cuando se cargue
@@ -978,7 +1011,95 @@
     }
 
     function isAdmin() {
-      return !!(currentUser && ADMIN_CODES.includes(currentUser.code));
+      return !!(currentUser && (currentUser.isAdmin === true || ADMIN_CODES.includes(currentUser.code)));
+    }
+
+    // ==========================================
+    // ACCESO SECRETO DE ADMINS: 5 TOQUES SOBRE "Cata" + CUENTA DE GOOGLE
+    // ==========================================
+    let secretTapCount = 0;
+    let secretTapTimer = null;
+    let googleButtonRendered = false;
+
+    function handleSecretTap() {
+      secretTapCount++;
+      clearTimeout(secretTapTimer);
+      secretTapTimer = setTimeout(() => { secretTapCount = 0; }, 2500);
+
+      if (secretTapCount >= 5) {
+        secretTapCount = 0;
+        openAdminLogin();
+      }
+    }
+
+    function openAdminLogin() {
+      const statusText = document.getElementById('admin-login-status');
+      document.getElementById('admin-login-modal').classList.remove('hidden');
+
+      if (!GOOGLE_CLIENT_ID) {
+        statusText.innerText = "El acceso con Google todavía no está configurado (falta el Client ID). Mientras tanto, entrá con tu código de admin en la pantalla principal.";
+        return;
+      }
+
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        statusText.innerText = "No se pudo cargar Google. Revisá la conexión a internet y volvé a intentar.";
+        return;
+      }
+
+      statusText.innerText = "";
+      if (!googleButtonRendered) {
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredential
+        });
+        google.accounts.id.renderButton(document.getElementById('google-btn-container'), {
+          theme: 'filled_black',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          locale: 'es'
+        });
+        googleButtonRendered = true;
+      }
+    }
+
+    function closeAdminLogin() {
+      document.getElementById('admin-login-modal').classList.add('hidden');
+    }
+
+    // Lee los datos (email, nombre) del token que entrega Google
+    function decodeJwtPayload(token) {
+      const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const bytes = Uint8Array.from(atob(part), c => c.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    function handleGoogleCredential(response) {
+      try {
+        const payload = decodeJwtPayload(response.credential);
+        const email = (payload.email || '').toLowerCase();
+
+        if (!payload.email_verified || !ADMIN_EMAILS.includes(email)) {
+          showToast("Esa cuenta de Google no está autorizada como admin de la fiesta.", "error");
+          return;
+        }
+
+        currentUser = {
+          code: 'ADMIN',
+          name: payload.given_name || payload.name || email.split('@')[0],
+          id: 'admin_' + email,
+          email: email,
+          isAdmin: true
+        };
+
+        localStorage.setItem('catapp_user', JSON.stringify(currentUser));
+        closeAdminLogin();
+        showToast(`¡Hola ${currentUser.name}! Panel de admin listo.`, "success");
+        showApp();
+      } catch (err) {
+        console.error("Error al validar la cuenta de Google:", err);
+        showToast("No se pudo validar la cuenta de Google. Probá de nuevo.", "error");
+      }
     }
 
     // ==========================================
@@ -1019,7 +1140,8 @@
       document.getElementById('app-screen').classList.remove('hidden');
 
       document.getElementById('user-display-name').innerText = currentUser.name;
-      document.getElementById('user-display-code').innerText = currentUser.code + (isAdmin() ? ' · ADMIN' : '');
+      document.getElementById('user-display-code').innerText =
+        currentUser.code === 'ADMIN' ? 'ADMIN · GOOGLE' : currentUser.code + (isAdmin() ? ' · ADMIN' : '');
       document.getElementById('profile-name').innerText = currentUser.name;
       document.getElementById('profile-code').innerText = currentUser.code;
       document.getElementById('profile-avatar').innerText = currentUser.name.charAt(0).toUpperCase();

@@ -55,3 +55,8 @@
 - Para que los otros 3 admins puedan usar "CONECTAR SPOTIFY",
   agregarlos en el dashboard de Spotify → app CatApp → Settings →
   User Management (nombre + email de su cuenta de Spotify).
+- **Acceso admin con Google**: crear el Client ID gratuito siguiendo
+  `INSTRUCCIONES-GOOGLE.md` (5 min, en la compu) y pegarlo en la
+  constante `GOOGLE_CLIENT_ID` de `index.html`. Hasta entonces, los
+  admins entran con su código de respaldo. El gesto: 5 toques sobre
+  "Cata" en la pantalla de entrada.
