@@ -120,6 +120,20 @@
       0%, 100% { opacity: 0.15; transform: scale(0.85); }
       50% { opacity: 0.75; transform: scale(1.15); }
     }
+
+    /* Informe de invitados: solo existe al imprimir / guardar como PDF */
+    #print-report { display: none; }
+    @media print {
+      body > *:not(#print-report) { display: none !important; }
+      body { background: #ffffff !important; padding: 0 !important; }
+      #print-report { display: block !important; color: #111; font-family: Arial, sans-serif; }
+      #print-report table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; }
+      #print-report th, #print-report td { border: 1px solid #bbb; padding: 4px 6px; font-size: 10px; text-align: left; }
+      #print-report th { background: #eee; }
+      #print-report h1 { font-size: 18px; margin: 0 0 2px; }
+      #print-report h2 { font-size: 13px; margin: 14px 0 2px; }
+      #print-report p { font-size: 10px; margin: 2px 0; color: #444; }
+    }
   </style>
 </head>
 <body class="text-[#FAFAFA] min-h-screen flex flex-col items-center overflow-x-hidden pb-28 relative">
@@ -251,6 +265,21 @@
 
       <div id="guests-stats" class="grid grid-cols-4 gap-2"></div>
 
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="openGuestForm(null)"
+          class="py-2.5 rounded-xl bg-white text-black font-extrabold text-[9px] tracking-wider uppercase transition active:scale-95">
+          ➕ Agregar
+        </button>
+        <button onclick="exportGuestsCsv()"
+          class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[9px] tracking-wider uppercase transition active:scale-95">
+          ⬇️ Excel
+        </button>
+        <button onclick="printGuestsReport()"
+          class="py-2.5 rounded-xl bg-zinc-100 text-black font-extrabold text-[9px] tracking-wider uppercase transition active:scale-95">
+          🖨️ Informe PDF
+        </button>
+      </div>
+
       <div class="relative">
         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-500">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -267,6 +296,54 @@
       </div>
 
       <div id="guests-list" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: AGREGAR / EDITAR INVITADO -->
+  <div id="guest-form-modal" class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 hidden">
+    <div class="w-full max-w-sm bg-zinc-900/95 border border-zinc-700 p-6 rounded-3xl space-y-4 shadow-2xl">
+      <h3 id="guest-form-title" class="text-sm font-bold text-zinc-100">Agregar invitado</h3>
+
+      <div class="space-y-3 text-left">
+        <div>
+          <label class="block text-[9px] tracking-wider text-zinc-400 uppercase font-bold mb-1">Nombre de la invitación</label>
+          <input type="text" id="gf-name" placeholder="Ej. FAMILIA PÉREZ"
+            class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-[9px] tracking-wider text-zinc-400 uppercase font-bold mb-1">Grupo</label>
+          <input type="text" id="gf-group" list="group-options" placeholder="Ej. Colegio Cata"
+            class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 outline-none" />
+          <datalist id="group-options"></datalist>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-[9px] tracking-wider text-zinc-400 uppercase font-bold mb-1">Adultos</label>
+            <input type="number" id="gf-adults" min="0" value="0"
+              class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl py-2.5 px-3 text-xs text-white outline-none" />
+          </div>
+          <div>
+            <label class="block text-[9px] tracking-wider text-zinc-400 uppercase font-bold mb-1">Chicos</label>
+            <input type="number" id="gf-kids" min="0" value="0"
+              class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl py-2.5 px-3 text-xs text-white outline-none" />
+          </div>
+          <div>
+            <label class="block text-[9px] tracking-wider text-zinc-400 uppercase font-bold mb-1">Men. de 5</label>
+            <input type="number" id="gf-under5" min="0" value="0"
+              class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl py-2.5 px-3 text-xs text-white outline-none" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-[9px] tracking-wider text-zinc-400 uppercase font-bold mb-1">Notas</label>
+          <input type="text" id="gf-notes" placeholder="Opcional"
+            class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 outline-none" />
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeGuestForm()" class="flex-1 bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-xs py-3 rounded-xl transition">Cancelar</button>
+        <button onclick="saveGuestForm()" class="flex-1 bg-white text-black font-extrabold text-xs py-3 rounded-xl transition active:scale-95">Guardar</button>
+      </div>
     </div>
   </div>
 
@@ -1040,9 +1117,18 @@
 
       initSupabase();
 
-      // Si el invitado llega desde un QR (?codigo=XXXX), el código viene precargado
+      // Si el invitado llega desde un QR (?codigo=XXXX), el código viene precargado.
+      // Si no, se recuerdan el último código y nombre usados en este teléfono
+      // para que volver a entrar sea tocar un solo botón.
       const urlCode = new URLSearchParams(window.location.search).get('codigo');
-      if (urlCode) document.getElementById('login-code').value = urlCode.toUpperCase();
+      if (urlCode) {
+        document.getElementById('login-code').value = urlCode.toUpperCase();
+      } else {
+        const lastCode = localStorage.getItem('catapp_last_code');
+        if (lastCode) document.getElementById('login-code').value = lastCode;
+      }
+      const lastName = localStorage.getItem('catapp_last_name');
+      if (lastName) document.getElementById('login-name').value = lastName;
 
       // La sesión guardada se restaura antes de cargar invitados
       // (define si es admin, p. ej. para subir la lista la primera vez)
@@ -1153,6 +1239,9 @@
       };
 
       localStorage.setItem('catapp_user', JSON.stringify(currentUser));
+      // Se recuerdan para la próxima vez: el login queda precompletado
+      localStorage.setItem('catapp_last_code', code);
+      localStorage.setItem('catapp_last_name', name);
       showToast(`¡Hola ${name}! Accediendo a los 15 de Cata.`, "success");
       showApp();
     }
@@ -1886,6 +1975,12 @@
       if (isSharedMode()) {
         const dbFields = {};
         if ('code' in fields) dbFields.code = fields.code;
+        if ('name' in fields) dbFields.name = fields.name;
+        if ('grupo' in fields) dbFields.group_name = fields.grupo;
+        if ('adults' in fields) dbFields.adults = fields.adults;
+        if ('kids' in fields) dbFields.kids = fields.kids;
+        if ('under5' in fields) dbFields.under5 = fields.under5;
+        if ('total' in fields) dbFields.total = fields.total;
         if ('saveTheDate' in fields) dbFields.save_the_date = fields.saveTheDate;
         if ('confirmed' in fields) dbFields.confirmed = fields.confirmed;
         if ('notes' in fields) dbFields.notes = fields.notes;
@@ -1990,9 +2085,13 @@
                 class="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wide transition ${CONF_STYLES[g.confirmed] || CONF_STYLES.pendiente}">
                 ${CONF_LABELS[g.confirmed] || CONF_LABELS.pendiente}
               </button>
-              <button onclick="editGuestNotes('${g.id}')"
+              <button onclick="openGuestForm('${g.id}')"
                 class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 text-[9px] font-bold uppercase tracking-wide transition">
-                📝 Nota
+                ✏️ Editar
+              </button>
+              <button onclick="deleteGuest('${g.id}')"
+                class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-red-400 text-[9px] font-bold uppercase tracking-wide transition">
+                🗑️
               </button>
               ${g.notes ? `<span class="text-[10px] text-amber-200/80 italic w-full">${escapeHtml(g.notes)}</span>` : ''}
             </div>
@@ -2023,12 +2122,203 @@
       updateGuest(guestId, { code: code });
     }
 
-    function editGuestNotes(guestId) {
+    // Código único nuevo, sin caracteres confundibles (0/O, 1/I/L)
+    function generateGuestCode() {
+      const ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      while (true) {
+        let code = '';
+        for (let i = 0; i < 4; i++) code += ALPH[Math.floor(Math.random() * ALPH.length)];
+        if (!guests.some(g => g.code === code) && !PARTY_CODES.includes(code) && !ADMIN_CODES.includes(code)) {
+          return code;
+        }
+      }
+    }
+
+    // ==========================================
+    // AGREGAR / EDITAR / BORRAR INVITADOS
+    // ==========================================
+    let editingGuestId = null;
+
+    function openGuestForm(guestId) {
+      editingGuestId = guestId;
+      const guest = guestId ? guests.find(g => g.id === guestId) : null;
+
+      document.getElementById('guest-form-title').innerText = guest ? `Editar: ${guest.name}` : 'Agregar invitado';
+      document.getElementById('gf-name').value = guest ? guest.name : '';
+      document.getElementById('gf-group').value = guest ? guest.grupo : '';
+      document.getElementById('gf-adults').value = guest ? guest.adults : 0;
+      document.getElementById('gf-kids').value = guest ? guest.kids : 0;
+      document.getElementById('gf-under5').value = guest ? guest.under5 : 0;
+      document.getElementById('gf-notes').value = guest ? guest.notes : '';
+
+      // Sugerencias de grupos existentes
+      const groupsSeen = [];
+      guests.forEach(g => { if (g.grupo && !groupsSeen.includes(g.grupo)) groupsSeen.push(g.grupo); });
+      document.getElementById('group-options').innerHTML =
+        groupsSeen.map(gr => `<option value="${escapeHtml(gr)}"></option>`).join('');
+
+      document.getElementById('guest-form-modal').classList.remove('hidden');
+    }
+
+    function closeGuestForm() {
+      editingGuestId = null;
+      document.getElementById('guest-form-modal').classList.add('hidden');
+    }
+
+    async function saveGuestForm() {
+      const name = document.getElementById('gf-name').value.trim();
+      const grupo = document.getElementById('gf-group').value.trim() || 'Otros';
+      const adults = Math.max(0, parseInt(document.getElementById('gf-adults').value) || 0);
+      const kids = Math.max(0, parseInt(document.getElementById('gf-kids').value) || 0);
+      const under5 = Math.max(0, parseInt(document.getElementById('gf-under5').value) || 0);
+      const notes = document.getElementById('gf-notes').value.trim();
+      const total = adults + kids + under5;
+
+      if (!name) {
+        showToast("Poné el nombre de la invitación.", "warning");
+        return;
+      }
+
+      if (editingGuestId) {
+        await updateGuest(editingGuestId, { name, grupo, adults, kids, under5, total, notes });
+        closeGuestForm();
+        showToast("Invitado actualizado ✓", "success");
+        return;
+      }
+
+      // Invitación nueva con código único automático
+      const nuevo = {
+        grupo, name, code: generateGuestCode(),
+        adults, kids, under5, total,
+        saveTheDate: false, confirmed: 'pendiente', notes
+      };
+
+      if (isSharedMode()) {
+        const { data, error } = await sb.from('guests').insert({
+          group_name: nuevo.grupo, name: nuevo.name, code: nuevo.code,
+          adults: nuevo.adults, kids: nuevo.kids, under5: nuevo.under5, total: nuevo.total,
+          save_the_date: nuevo.saveTheDate, confirmed: nuevo.confirmed, notes: nuevo.notes
+        }).select('*').single();
+        if (error) {
+          console.error("Error al agregar invitado:", error);
+          showToast("No se pudo agregar el invitado. Intenta de nuevo.", "error");
+          return;
+        }
+        guests.push(mapDbGuest(data));
+      } else {
+        nuevo.id = 'g_' + Date.now();
+        guests.push(nuevo);
+        saveLocalGuests();
+      }
+
+      closeGuestForm();
+      renderGuestsPanel();
+      showToast(`"${name}" agregado con el código ${nuevo.code} ✓`, "success");
+    }
+
+    async function deleteGuest(guestId) {
       const guest = guests.find(g => g.id === guestId);
       if (!guest) return;
-      const input = prompt(`Nota para ${guest.name}:`, guest.notes || '');
-      if (input === null) return;
-      updateGuest(guestId, { notes: input.trim() });
+
+      if (!confirm(`¿Borrar la invitación de "${guest.name}" (${guest.total} pers.)? Esta acción no se puede deshacer.`)) {
+        return;
+      }
+
+      guests = guests.filter(g => g.id !== guestId);
+      saveLocalGuests();
+      renderGuestsPanel();
+
+      if (isSharedMode()) {
+        const { error } = await sb.from('guests').delete().eq('id', guestId);
+        if (error) {
+          console.error("Error al borrar invitado:", error);
+          showToast("No se pudo borrar en la base compartida.", "error");
+          await loadGuests();
+          renderGuestsPanel();
+          return;
+        }
+      }
+      showToast(`Invitación de "${guest.name}" borrada.`, "info");
+    }
+
+    // ==========================================
+    // EXPORTAR: LISTA EN EXCEL (CSV) E INFORME EN PDF
+    // ==========================================
+    function exportGuestsCsv() {
+      const CONF_TXT = { pendiente: 'Pendiente', si: 'SI', no: 'NO' };
+      const sep = ';'; // separador que Excel en español abre directo en columnas
+      const lines = [
+        ['Grupo', 'Nombre', 'Código', 'Adultos', 'Chicos', 'Menores de 5', 'Total', 'Save the date', 'Confirmó', 'Notas'].join(sep)
+      ];
+      guests.forEach(g => {
+        const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+        lines.push([
+          cell(g.grupo), cell(g.name), cell(g.code),
+          g.adults, g.kids, g.under5, g.total,
+          g.saveTheDate ? 'SI' : '', CONF_TXT[g.confirmed] || 'Pendiente', cell(g.notes)
+        ].join(sep));
+      });
+
+      // El BOM (﻿) hace que Excel reconozca los acentos correctamente
+      const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Invitados-XV-Cata-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast("Lista descargada. Se abre con Excel ✓", "success");
+    }
+
+    function printGuestsReport() {
+      const CONF_TXT = { pendiente: 'Pendiente', si: 'SÍ', no: 'NO' };
+      const sum = (arr, f) => arr.reduce((acc, g) => acc + (f(g) || 0), 0);
+
+      const personas = sum(guests, g => g.total);
+      const adultos = sum(guests, g => g.adults);
+      const chicos = sum(guests, g => g.kids);
+      const menores = sum(guests, g => g.under5);
+      const conf = guests.filter(g => g.confirmed === 'si');
+      const noVienen = guests.filter(g => g.confirmed === 'no');
+      const std = guests.filter(g => g.saveTheDate);
+
+      const groupsSeen = [];
+      guests.forEach(g => { if (!groupsSeen.includes(g.grupo)) groupsSeen.push(g.grupo); });
+
+      let html = `
+        <h1>XV de Cata — 11.09.26 · Informe de invitados</h1>
+        <p>Generado el ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} · CatApp</p>
+        <h2>Resumen del evento</h2>
+        <table>
+          <tr><th></th><th>Invitaciones</th><th>Personas</th><th>Adultos</th><th>Chicos</th><th>Menores de 5</th></tr>
+          <tr><td><strong>Invitados totales</strong></td><td>${guests.length}</td><td>${personas}</td><td>${adultos}</td><td>${chicos}</td><td>${menores}</td></tr>
+          <tr><td><strong>Con save the date</strong></td><td>${std.length}</td><td>${sum(std, g => g.total)}</td><td>${sum(std, g => g.adults)}</td><td>${sum(std, g => g.kids)}</td><td>${sum(std, g => g.under5)}</td></tr>
+          <tr><td><strong>Confirmados (SÍ)</strong></td><td>${conf.length}</td><td>${sum(conf, g => g.total)}</td><td>${sum(conf, g => g.adults)}</td><td>${sum(conf, g => g.kids)}</td><td>${sum(conf, g => g.under5)}</td></tr>
+          <tr><td><strong>No vienen</strong></td><td>${noVienen.length}</td><td>${sum(noVienen, g => g.total)}</td><td>${sum(noVienen, g => g.adults)}</td><td>${sum(noVienen, g => g.kids)}</td><td>${sum(noVienen, g => g.under5)}</td></tr>
+        </table>
+      `;
+
+      groupsSeen.forEach(grupo => {
+        const list = guests.filter(g => g.grupo === grupo);
+        html += `
+          <h2>${escapeHtml(grupo)} — ${list.length} invitaciones · ${sum(list, g => g.total)} personas</h2>
+          <table>
+            <tr><th>Nombre</th><th>Código</th><th>Adultos</th><th>Chicos</th><th>&lt;5</th><th>Total</th><th>Save the date</th><th>Confirmó</th><th>Notas</th></tr>
+            ${list.map(g => `
+              <tr>
+                <td>${escapeHtml(g.name)}</td><td>${escapeHtml(g.code)}</td>
+                <td>${g.adults || ''}</td><td>${g.kids || ''}</td><td>${g.under5 || ''}</td><td>${g.total}</td>
+                <td>${g.saveTheDate ? '✔' : ''}</td><td>${CONF_TXT[g.confirmed] || 'Pendiente'}</td>
+                <td>${escapeHtml(g.notes || '')}</td>
+              </tr>
+            `).join('')}
+          </table>
+        `;
+      });
+
+      document.getElementById('print-report').innerHTML = html;
+      // En el diálogo de impresión se elige "Guardar como PDF"
+      window.print();
     }
 
     function toggleGuestStd(guestId) {
@@ -3202,5 +3492,8 @@
       playingTrackId = null;
     }
   </script>
+
+  <!-- INFORME DE INVITADOS: solo visible al imprimir / guardar como PDF -->
+  <div id="print-report"></div>
 </body>
 </html>
