@@ -46,9 +46,22 @@
       transition: background-image 0.5s ease-in-out;
     }
 
-    /* Clase activa que se inyecta por JS cuando "Fondo CatApp.jpeg" carga con éxito */
+    /* Clase activa que se inyecta por JS cuando "fondo-login.jpeg" carga con éxito.
+       La imagen es la invitación original pero SIN el texto horneado: los textos
+       (MIS XV / Cata / 11.09.26) se renderizan en HTML, siempre bien arriba. */
     .bg-image-loaded {
-      background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 75%), url('Fondo%20CatApp.jpeg') !important;
+      background-image: linear-gradient(to bottom, rgba(0,0,0,0) 48%, rgba(0,0,0,0.82) 100%), url('fondo-login.jpeg') !important;
+    }
+
+    /* Con la imagen cargada, la bola de espejos HTML se convierte en un espaciador
+       invisible cuya altura coincide con la bola del JPEG (≈22% de la altura de la
+       imagen escalada con cover), para que el texto quede justo debajo de ella. */
+    .bg-image-loaded #html-replica-ball {
+      visibility: hidden;
+      height: max(calc(min(100vw, 28rem) * 0.40), 22vh);
+    }
+    .bg-image-loaded #html-replica-header {
+      margin-top: 0;
     }
 
     /* Vidrio esmerilado premium para las tarjetas */
@@ -118,7 +131,7 @@
        ========================================== -->
   <div id="login-screen" class="w-full max-w-md min-h-screen flex flex-col justify-between items-center px-6 py-8 z-10 save-the-date-bg relative">
     
-    <!-- PARTE SUPERIOR: BOLA DE ESPEJOS DE RESPALDO (Se oculta automáticamente si carga el JPEG) -->
+    <!-- PARTE SUPERIOR: BOLA DE ESPEJOS DE RESPALDO (se vuelve espaciador invisible si carga el JPEG) -->
     <div id="html-replica-ball" class="relative w-full flex flex-col items-center">
       <div class="w-[1px] h-10 bg-gradient-to-b from-white/10 to-white/70"></div>
       <div class="relative w-48 h-28 -mt-2 flex items-center justify-center overflow-hidden">
@@ -139,7 +152,7 @@
       </div>
     </div>
 
-    <!-- TEXTOS DE RESPALDO (Se ocultan automáticamente si carga el JPEG) -->
+    <!-- TEXTOS DEL SAVE THE DATE (siempre visibles, bien arriba sobre la imagen) -->
     <div id="html-replica-header" class="text-center -mt-6 w-full relative z-10">
       <span class="text-[10px] tracking-[0.45em] font-serif text-zinc-400 font-bold uppercase">MIS XV</span>
       <h1 class="text-6xl font-cursive text-white tracking-wide mt-1 mb-2 select-none">Cata</h1>
@@ -580,6 +593,20 @@
        LÓGICA JAVASCRIPT ULTRAESTABLE
        ========================================== -->
   <script>
+    // ==========================================
+    // CONFIGURACIÓN DE SPOTIFY (API REAL)
+    // ==========================================
+    // Para que la conexión real funcione necesitas registrar la app:
+    //   1. Entra a https://developer.spotify.com/dashboard y crea una app.
+    //   2. En "Redirect URIs" agrega la URL EXACTA donde está publicada CatApp,
+    //      por ejemplo: https://tuusuario.github.io/CatApp/index.html
+    //      Debe ser HTTPS (para pruebas locales usa http://127.0.0.1:PUERTO/index.html).
+    //   3. Pega tu Client ID aquí abajo.
+    const SPOTIFY_CLIENT_ID = 'b27a3d902d8442b0905fb644b4131580';
+    const SPOTIFY_SCOPES = 'user-read-private playlist-read-private playlist-read-collaborative';
+    const SPOTIFY_AUTH_STORAGE_KEY = 'catapp_spotify_auth';
+    const SPOTIFY_PKCE_STORAGE_KEY = 'catapp_spotify_pkce_verifier';
+
     // BASE DE DATOS MOCK DE RESPALDO (VINCULADO AL RITMO DE LA FIESTA DE CATA)
     const SPOTIFY_CATALOG = [
       { id: "c1", title: "Gata Only", artist: "FloyyMenor & Cris Mj", album: "Single", coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80", genre: "Reggaeton" },
@@ -622,13 +649,27 @@
     let currentPreviewPlaylist = null;
     let detectedSong = null;
 
-    // Token oficial de Spotify para búsquedas reales
-    let spotifyAccessToken = null;
+    // Sesión oficial de Spotify (Authorization Code + PKCE)
+    let spotifyAuth = null;        // { accessToken, refreshToken, expiresAt }
+    let spotifyProfileName = null; // Nombre de la cuenta de Spotify conectada
 
-    // Sintetizador de sonido
+    // Reproductor (preview real de Spotify o sintetizador de respaldo)
     let audioCtx = null;
     let synthInterval = null;
+    let previewAudio = null;
     let playingTrackId = null;
+
+    // Escapa texto externo (nombres de canciones, artistas o invitados) antes
+    // de inyectarlo en plantillas HTML, para que comillas o símbolos < > & no
+    // rompan el render ni permitan inyección de código
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
     // Sistema de Alertas (Toasts)
     function showToast(message, type = 'info') {
@@ -646,7 +687,7 @@
       toast.className += ' ' + themeClasses[type];
       toast.innerHTML = `
         <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse shrink-0"></span>
-        <p class="text-xs font-semibold leading-normal flex-1">${message}</p>
+        <p class="text-xs font-semibold leading-normal flex-1">${escapeHtml(message)}</p>
       `;
 
       container.appendChild(toast);
@@ -667,8 +708,11 @@
     window.onload = function() {
       // Intentar precargar la imagen de fondo de forma inteligente
       preloadBackgroundImage();
-      
-      checkSpotifyRedirectToken();
+
+      // Restaurar sesión de Spotify guardada y procesar el regreso del login OAuth
+      loadStoredSpotifyAuth();
+      handleSpotifyRedirect();
+      if (isSpotifyConnected()) fetchSpotifyProfile();
 
       const savedUser = localStorage.getItem('catapp_user');
       const savedSongs = localStorage.getItem('catapp_songs');
@@ -695,21 +739,17 @@
     // Precarga inteligente para que nunca ocurra parpadeo o duplicación de textos
     function preloadBackgroundImage() {
       const bgImg = new Image();
-      bgImg.src = 'Fondo%20CatApp.jpeg';
-      
+      bgImg.src = 'fondo-login.jpeg';
+
       bgImg.onload = function() {
         const loginScreen = document.getElementById('login-screen');
         if (loginScreen) {
+          // El CSS de .bg-image-loaded convierte la bola HTML en un espaciador
+          // invisible y deja los textos visibles, bien arriba sobre la imagen
           loginScreen.classList.add('bg-image-loaded');
-          
-          // Ocultar los elementos vectoriales duplicados que ya vienen impresos en el JPEG
-          const htmlReplicaBall = document.getElementById('html-replica-ball');
-          const htmlReplicaHeader = document.getElementById('html-replica-header');
-          if (htmlReplicaBall) htmlReplicaBall.classList.add('hidden');
-          if (htmlReplicaHeader) htmlReplicaHeader.classList.add('hidden');
         }
       };
-      
+
       bgImg.onerror = function() {
         console.log("No se pudo cargar la imagen de fondo local. Usando respaldo vectorial nativo.");
       };
@@ -756,7 +796,7 @@
     function showLogin() {
       document.getElementById('login-screen').classList.remove('hidden');
       document.getElementById('app-screen').classList.add('hidden');
-      stopSynth();
+      stopPlayback();
     }
 
     function showApp() {
@@ -774,44 +814,242 @@
     }
 
     // ==========================================
-    // INTEGRACIÓN CON SPOTIFY API REAL (IMPLICIT GRANT FLOW)
+    // INTEGRACIÓN CON SPOTIFY API REAL
+    // (AUTHORIZATION CODE + PKCE — el flujo implícito anterior fue
+    //  deprecado por Spotify; PKCE es el recomendado para webs sin backend)
     // ==========================================
-    function authenticateSpotify() {
-      const clientId = 'b27a3d902d8442b0905fb644b4131580'; // Reemplazar con tu Client ID de Spotify Developer
-      const redirectUri = window.location.href.split('#')[0].split('?')[0];
-      const scopes = 'user-read-private playlist-read-private';
-      
-      const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
-      
-      showToast("Redirigiendo a Spotify para vincular catálogo...", "info");
-      setTimeout(() => {
-        window.location.href = authUrl;
-      }, 1000);
+    function isSpotifyConnected() {
+      return !!(spotifyAuth && spotifyAuth.accessToken);
     }
 
-    function checkSpotifyRedirectToken() {
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
-      const token = params.get('access_token');
-      
-      if (token) {
-        spotifyAccessToken = token;
-        localStorage.setItem('spotify_token', token);
-        window.history.replaceState(null, null, window.location.pathname);
-        showToast("¡CatApp conectada exitosamente a Spotify Real!", "success");
+    function saveSpotifyAuth(auth) {
+      spotifyAuth = auth;
+      if (auth) {
+        localStorage.setItem(SPOTIFY_AUTH_STORAGE_KEY, JSON.stringify(auth));
       } else {
-        spotifyAccessToken = localStorage.getItem('spotify_token');
+        localStorage.removeItem(SPOTIFY_AUTH_STORAGE_KEY);
+      }
+    }
+
+    function loadStoredSpotifyAuth() {
+      try {
+        const raw = localStorage.getItem(SPOTIFY_AUTH_STORAGE_KEY);
+        spotifyAuth = raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        spotifyAuth = null;
+      }
+      // Limpieza del token del viejo flujo implícito (ya no sirve)
+      localStorage.removeItem('spotify_token');
+    }
+
+    function getSpotifyRedirectUri() {
+      return window.location.origin + window.location.pathname;
+    }
+
+    // --- Utilidades PKCE ---
+    function base64UrlEncode(buffer) {
+      return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    async function generatePkcePair() {
+      const verifierBytes = new Uint8Array(64);
+      crypto.getRandomValues(verifierBytes);
+      const verifier = base64UrlEncode(verifierBytes);
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+      return { verifier, challenge: base64UrlEncode(digest) };
+    }
+
+    async function authenticateSpotify() {
+      // crypto.subtle solo existe en contextos seguros (HTTPS o localhost)
+      if (!window.crypto || !crypto.subtle) {
+        showToast("La conexión con Spotify requiere abrir CatApp desde HTTPS o localhost.", "error");
+        return;
+      }
+
+      try {
+        const { verifier, challenge } = await generatePkcePair();
+        localStorage.setItem(SPOTIFY_PKCE_STORAGE_KEY, verifier);
+
+        const params = new URLSearchParams({
+          client_id: SPOTIFY_CLIENT_ID,
+          response_type: 'code',
+          redirect_uri: getSpotifyRedirectUri(),
+          scope: SPOTIFY_SCOPES,
+          code_challenge_method: 'S256',
+          code_challenge: challenge
+        });
+
+        showToast("Redirigiendo a Spotify para vincular tu cuenta...", "info");
+        setTimeout(() => {
+          window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
+        }, 600);
+      } catch (err) {
+        console.error("No se pudo iniciar la autorización con Spotify:", err);
+        showToast("No se pudo iniciar la conexión con Spotify.", "error");
+      }
+    }
+
+    // Al volver de Spotify llega ?code=... y se canjea por tokens reales
+    async function handleSpotifyRedirect() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const authError = params.get('error');
+
+      if (authError) {
+        window.history.replaceState(null, null, window.location.pathname);
+        showToast(`Spotify denegó el acceso (${authError}).`, "error");
+        return;
+      }
+      if (!code) return;
+
+      const verifier = localStorage.getItem(SPOTIFY_PKCE_STORAGE_KEY);
+      window.history.replaceState(null, null, window.location.pathname);
+      if (!verifier) return;
+
+      try {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: getSpotifyRedirectUri(),
+            client_id: SPOTIFY_CLIENT_ID,
+            code_verifier: verifier
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.access_token) {
+          throw new Error(data.error_description || 'Intercambio de token fallido');
+        }
+
+        localStorage.removeItem(SPOTIFY_PKCE_STORAGE_KEY);
+        saveSpotifyAuth({
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token || null,
+          expiresAt: Date.now() + ((data.expires_in || 3600) - 60) * 1000
+        });
+
+        showToast("¡CatApp conectada exitosamente a Spotify Real!", "success");
+        fetchSpotifyProfile();
+        updateSpotifyBannerUI();
+      } catch (err) {
+        console.error("Error al canjear el código de Spotify:", err);
+        showToast("No se pudo completar la conexión con Spotify. Revisa el Client ID y la Redirect URI.", "error");
+      }
+    }
+
+    async function refreshSpotifyToken() {
+      if (!spotifyAuth || !spotifyAuth.refreshToken) return false;
+
+      try {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: spotifyAuth.refreshToken,
+            client_id: SPOTIFY_CLIENT_ID
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.access_token) return false;
+
+        saveSpotifyAuth({
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token || spotifyAuth.refreshToken,
+          expiresAt: Date.now() + ((data.expires_in || 3600) - 60) * 1000
+        });
+        return true;
+      } catch (err) {
+        console.error("Error al refrescar el token de Spotify:", err);
+        return false;
+      }
+    }
+
+    function clearSpotifySession() {
+      saveSpotifyAuth(null);
+      spotifyProfileName = null;
+      updateSpotifyBannerUI();
+    }
+
+    async function getValidSpotifyToken() {
+      if (!isSpotifyConnected()) return null;
+
+      if (Date.now() >= spotifyAuth.expiresAt) {
+        const refreshed = await refreshSpotifyToken();
+        if (!refreshed) {
+          clearSpotifySession();
+          showToast("Tu sesión de Spotify expiró. Conéctate de nuevo.", "warning");
+          return null;
+        }
+      }
+      return spotifyAuth.accessToken;
+    }
+
+    // Llamada genérica a la API de Spotify con refresco automático ante un 401
+    async function spotifyApi(path) {
+      let token = await getValidSpotifyToken();
+      if (!token) throw new Error('SPOTIFY_NO_AUTH');
+
+      let response = await fetch(`https://api.spotify.com/v1${path}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.status === 401) {
+        const refreshed = await refreshSpotifyToken();
+        if (!refreshed) {
+          clearSpotifySession();
+          throw new Error('SPOTIFY_NO_AUTH');
+        }
+        response = await fetch(`https://api.spotify.com/v1${path}`, {
+          headers: { 'Authorization': `Bearer ${spotifyAuth.accessToken}` }
+        });
+      }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error((errData.error && errData.error.message) || `Spotify respondió ${response.status}`);
+      }
+      return response.json();
+    }
+
+    // Convierte un track crudo de la API al formato interno de CatApp
+    function mapSpotifyTrack(item) {
+      const images = (item.album && item.album.images) || [];
+      const cover = images.length > 1 ? images[1].url : (images[0] && images[0].url);
+      return {
+        id: item.id,
+        title: item.name,
+        artist: item.artists.map(a => a.name).join(', '),
+        album: item.album ? item.album.name : 'Sencillo',
+        coverUrl: cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80',
+        previewUrl: item.preview_url || null,
+        genre: 'Spotify'
+      };
+    }
+
+    async function fetchSpotifyProfile() {
+      try {
+        const me = await spotifyApi('/me');
+        spotifyProfileName = me.display_name || me.id;
+        updateSpotifyBannerUI();
+      } catch (err) {
+        // No es crítico: el banner mostrará el estado genérico de conexión
       }
     }
 
     function updateSpotifyBannerUI() {
       const statusText = document.getElementById('spotify-connection-status');
       const connectBtn = document.getElementById('btn-spotify-connect');
-      
+
       if (!statusText || !connectBtn) return;
 
-      if (spotifyAccessToken) {
-        statusText.innerText = "✓ Conectado a la API Real de Spotify";
+      if (isSpotifyConnected()) {
+        statusText.innerText = spotifyProfileName
+          ? `✓ Conectado como ${spotifyProfileName}`
+          : "✓ Conectado a la API Real de Spotify";
         statusText.className = "text-[9px] text-emerald-400 font-bold uppercase tracking-wider";
         connectBtn.innerText = "DESCONECTAR";
         connectBtn.onclick = disconnectSpotify;
@@ -826,10 +1064,9 @@
     }
 
     function disconnectSpotify() {
-      spotifyAccessToken = null;
-      localStorage.removeItem('spotify_token');
+      clearSpotifySession();
+      localStorage.removeItem(SPOTIFY_PKCE_STORAGE_KEY);
       showToast("Desconectado de Spotify. Volviendo a modo simulación.", "info");
-      updateSpotifyBannerUI();
       renderAll();
     }
 
@@ -860,6 +1097,9 @@
     }
 
     function renderAll() {
+      // Sin sesión de invitado no hay vistas que renderizar (p. ej. tras cerrar sesión)
+      if (!currentUser) return;
+
       updateSpotifyBannerUI();
       if (activeTab === 'soundtrack') {
         renderSoundtrack();
@@ -875,7 +1115,7 @@
     // ==========================================
     function renderSoundtrack() {
       const sorted = [...songs].sort((a, b) => b.votes - a.votes);
-      document.getElementById('songs-count').innerText = `${songs.length} Canciones`;
+      document.getElementById('songs-count').innerText = `${songs.length} Temas`;
 
       const topBanner = document.getElementById('top-song-banner');
       if (sorted.length > 0) {
@@ -887,7 +1127,7 @@
               <div class="relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 bg-zinc-900 shadow-md">
                 <img src="${top.coverUrl}" alt="Cover" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
                 <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <button onclick="toggleTrackSynth('${top.id}', '${top.genre || 'Pop'}')" class="p-1.5 rounded-full bg-white/25 text-white">
+                  <button onclick="toggleTrackPlayback('${top.id}')" class="p-1.5 rounded-full bg-white/25 text-white">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       ${isPlaying ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9z" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />'}
                     </svg>
@@ -899,8 +1139,8 @@
                   <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
                   <span class="text-[9px] tracking-[0.2em] text-white/80 font-bold uppercase">LA MÁS VOTADA</span>
                 </div>
-                <h3 class="text-xs font-bold text-zinc-100 truncate pr-2">${top.title}</h3>
-                <p class="text-[10px] text-zinc-500 truncate">${top.artist}</p>
+                <h3 class="text-xs font-bold text-zinc-100 truncate pr-2">${escapeHtml(top.title)}</h3>
+                <p class="text-[10px] text-zinc-500 truncate">${escapeHtml(top.artist)}</p>
               </div>
             </div>
             <div class="text-right shrink-0">
@@ -937,7 +1177,7 @@
               <div class="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-zinc-900 flex-none">
                 <img src="${song.coverUrl}" alt="Cover" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
                 <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <button onclick="toggleTrackSynth('${song.id}', '${song.genre || 'Pop'}')" class="p-1 rounded-full bg-white/20 text-white">
+                  <button onclick="toggleTrackPlayback('${song.id}')" class="p-1 rounded-full bg-white/20 text-white">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       ${isPlaying ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9z" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />'}
                     </svg>
@@ -955,11 +1195,11 @@
               </div>
 
               <div class="min-w-0 flex-1">
-                <h4 class="text-xs font-bold text-zinc-200 truncate pr-2">${song.title}</h4>
-                <p class="text-[10px] text-zinc-500 truncate mb-1">${song.artist}</p>
+                <h4 class="text-xs font-bold text-zinc-200 truncate pr-2">${escapeHtml(song.title)}</h4>
+                <p class="text-[10px] text-zinc-500 truncate mb-1">${escapeHtml(song.artist)}</p>
                 <div class="flex items-center gap-1.5 text-[9px] text-zinc-650 font-semibold truncate">
                   <span class="w-1 h-1 rounded-full bg-zinc-700 flex-none"></span>
-                  <span class="truncate">Pedida por ${song.addedBy}</span>
+                  <span class="truncate">Pedida por ${escapeHtml(song.addedBy)}</span>
                 </div>
               </div>
             </div>
@@ -1047,33 +1287,16 @@
 
       clearTimeout(searchDebounceTimeout);
       searchDebounceTimeout = setTimeout(async () => {
-        if (spotifyAccessToken) {
+        if (isSpotifyConnected()) {
           resultsContainer.innerHTML = `<div class="p-4 text-center text-zinc-500 text-xs">Buscando en Spotify real...</div>`;
           try {
-            const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=8`, {
-              headers: { 'Authorization': `Bearer ${spotifyAccessToken}` }
-            });
-            
-            if (response.status === 401) {
-              disconnectSpotify();
-              showToast("Tu sesión de Spotify ha expirado. Volviendo a modo simulación.", "warning");
-              performMockSearch(q);
-              return;
-            }
-
-            const data = await response.json();
-            const tracks = data.tracks.items.map(item => ({
-              id: item.id,
-              title: item.name,
-              artist: item.artists.map(a => a.name).join(', '),
-              album: item.album.name,
-              coverUrl: item.album.images[0]?.url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80',
-              genre: 'Spotify Track'
-            }));
-
-            renderSearchResults(tracks);
+            const data = await spotifyApi(`/search?q=${encodeURIComponent(q)}&type=track&limit=8`);
+            renderSearchResults(data.tracks.items.map(mapSpotifyTrack));
           } catch (err) {
             console.error("Error al buscar en Spotify:", err);
+            if (err.message === 'SPOTIFY_NO_AUTH') {
+              showToast("Tu sesión de Spotify expiró. Volviendo a modo simulación.", "warning");
+            }
             performMockSearch(q);
           }
         } else {
@@ -1125,8 +1348,8 @@
             <div class="flex items-center gap-3 min-w-0">
               <img src="${track.coverUrl}" alt="Cover" class="w-10 h-10 object-cover rounded-xl bg-zinc-900 flex-none" />
               <div class="min-w-0">
-                <h4 class="text-xs font-bold text-zinc-200 truncate">${track.title}</h4>
-                <p class="text-[10px] text-zinc-500 truncate">${track.artist}</p>
+                <h4 class="text-xs font-bold text-zinc-200 truncate">${escapeHtml(track.title)}</h4>
+                <p class="text-[10px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
               </div>
             </div>
 
@@ -1160,6 +1383,7 @@
         artist: track.artist,
         album: track.album || "Sencillo",
         coverUrl: track.coverUrl,
+        previewUrl: track.previewUrl || null,
         addedBy: currentUser.name,
         addedById: currentUser.id,
         addedAt: Date.now(),
@@ -1199,45 +1423,50 @@
         return;
       }
 
-      if (spotifyAccessToken) {
-        const playlistIdRegex = /playlist\/([a-zA-Z0-9]+)/;
-        const match = url.match(playlistIdRegex);
-        
-        if (match && match[1]) {
-          const playlistId = match[1];
-          showToast("Analizando tu playlist real de Spotify...", "info");
-          try {
-            const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
-              headers: { 'Authorization': `Bearer ${spotifyAccessToken}` }
-            });
-            const data = await response.json();
-            
-            const importedTracks = data.tracks.items.slice(0, 15).map(item => ({
-              id: item.track.id,
-              title: item.track.name,
-              artist: item.track.artists.map(a => a.name).join(', '),
-              album: item.track.album.name,
-              coverUrl: item.track.album.images[0]?.url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80',
-              genre: 'Spotify Playlist Track'
-            }));
-
-            currentPreviewPlaylist = {
-              name: data.name,
-              creator: data.owner.display_name,
-              tracks: importedTracks
-            };
-
-            selectedImportTracks = {};
-            importedTracks.forEach(track => {
-              selectedImportTracks[track.id] = true;
-            });
-
-            renderImportPreview();
-            return;
-          } catch (err) {
-            console.error("Error al importar playlist:", err);
-          }
+      if (isSpotifyConnected()) {
+        const match = url.match(/playlist\/([a-zA-Z0-9]+)/);
+        if (!match) {
+          showToast("El enlace no parece ser una playlist de Spotify.", "warning");
+          return;
         }
+
+        showToast("Analizando tu playlist real de Spotify...", "info");
+        try {
+          const data = await spotifyApi(`/playlists/${match[1]}`);
+
+          // Se ignoran episodios de podcast y temas eliminados (track null)
+          const importedTracks = (data.tracks.items || [])
+            .filter(item => item && item.track && item.track.id)
+            .slice(0, 30)
+            .map(item => mapSpotifyTrack(item.track));
+
+          if (importedTracks.length === 0) {
+            showToast("Esa playlist no tiene canciones importables.", "warning");
+            return;
+          }
+
+          currentPreviewPlaylist = {
+            name: data.name,
+            creator: data.owner.display_name,
+            tracks: importedTracks
+          };
+
+          selectedImportTracks = {};
+          importedTracks.forEach(track => {
+            selectedImportTracks[track.id] = true;
+          });
+
+          renderImportPreview();
+        } catch (err) {
+          console.error("Error al importar playlist:", err);
+          showToast(
+            err.message === 'SPOTIFY_NO_AUTH'
+              ? "Tu sesión de Spotify expiró. Conéctate de nuevo."
+              : "No se pudo leer esa playlist. Verifica que el enlace sea correcto y la lista sea pública o tuya.",
+            "error"
+          );
+        }
+        return;
       }
 
       const preset = PRESET_PLAYLISTS[Math.floor(Math.random() * PRESET_PLAYLISTS.length)];
@@ -1273,8 +1502,8 @@
             <div class="flex items-center gap-3 min-w-0">
               <img src="${track.coverUrl}" alt="Cover" class="w-8 h-8 rounded object-cover bg-zinc-900" />
               <div class="min-w-0">
-                <h5 class="text-[11px] font-bold text-zinc-200 truncate">${track.title}</h5>
-                <p class="text-[9px] text-zinc-500 truncate">${track.artist}</p>
+                <h5 class="text-[11px] font-bold text-zinc-200 truncate">${escapeHtml(track.title)}</h5>
+                <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
               </div>
             </div>
 
@@ -1321,6 +1550,7 @@
             artist: track.artist,
             album: track.album || "Importado",
             coverUrl: track.coverUrl,
+            previewUrl: track.previewUrl || null,
             addedBy: currentUser.name,
             addedById: currentUser.id,
             addedAt: Date.now(),
@@ -1360,13 +1590,13 @@
             <div class="relative aspect-square rounded-xl overflow-hidden bg-zinc-900">
               <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
               <span class="absolute top-1.5 right-1.5 text-[8px] font-black tracking-wider bg-black/70 text-zinc-300 px-1.5 py-0.5 rounded uppercase">
-                ${track.genre}
+                ${escapeHtml(track.genre)}
               </span>
             </div>
 
             <div class="min-w-0">
-              <h4 class="text-[11px] font-bold text-zinc-200 truncate">${track.title}</h4>
-              <p class="text-[9px] text-zinc-500 truncate">${track.artist}</p>
+              <h4 class="text-[11px] font-bold text-zinc-200 truncate">${escapeHtml(track.title)}</h4>
+              <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
             </div>
 
             <button 
@@ -1397,8 +1627,8 @@
             <div class="flex items-center gap-3 min-w-0">
               <img src="${song.coverUrl}" alt="Cover" class="w-9 h-9 rounded-lg object-cover bg-zinc-800" />
               <div class="min-w-0">
-                <h4 class="text-xs font-bold text-zinc-200 truncate">${song.title}</h4>
-                <p class="text-[9px] text-zinc-500 truncate">${song.artist}</p>
+                <h4 class="text-xs font-bold text-zinc-200 truncate">${escapeHtml(song.title)}</h4>
+                <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
               </div>
             </div>
 
@@ -1434,6 +1664,7 @@
         artist: track.artist,
         album: track.album || "Favorita",
         coverUrl: track.coverUrl,
+        previewUrl: track.previewUrl || null,
         addedBy: currentUser.name,
         addedById: currentUser.id,
         addedAt: Date.now(),
@@ -1465,7 +1696,8 @@
 
     function closeMicModal() {
       document.getElementById('mic-modal').classList.add('hidden');
-      stopSynth();
+      stopPlayback();
+      renderAll();
     }
 
     function startMicScan() {
@@ -1503,7 +1735,7 @@
 
     function playSampleAudioDetected() {
       if (detectedSong) {
-        toggleTrackSynth(detectedSong.id, detectedSong.genre);
+        toggleTrackPlayback(detectedSong.id);
         const icon = document.getElementById('btn-play-detected');
         if (playingTrackId === detectedSong.id) {
           icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9z" />';
@@ -1514,20 +1746,48 @@
     }
 
     // ==========================================
-    // SINTETIZADOR DIGITAL DE AUDIO
+    // REPRODUCTOR: PREVIEW REAL DE SPOTIFY + SINTETIZADOR DE RESPALDO
     // ==========================================
-    function toggleTrackSynth(trackId, genre) {
+    function toggleTrackPlayback(trackId) {
       if (playingTrackId === trackId) {
-        stopSynth();
+        stopPlayback();
+        renderAll();
+        return;
+      }
+
+      const track = songs.find(s => s.id === trackId)
+        || (detectedSong && detectedSong.id === trackId ? detectedSong : null);
+      if (!track) return;
+
+      if (track.previewUrl) {
+        playPreview(track);
       } else {
-        playSynth(trackId, genre);
+        playSynth(track.id, track.genre || 'Pop');
       }
       renderAll();
     }
 
+    // Reproduce el adelanto oficial de 30 segundos que entrega la API de Spotify
+    function playPreview(track) {
+      stopPlayback();
+
+      previewAudio = new Audio(track.previewUrl);
+      previewAudio.volume = 0.8;
+      playingTrackId = track.id;
+
+      previewAudio.onended = function() {
+        stopPlayback();
+        renderAll();
+      };
+      previewAudio.play().catch(() => {
+        // Si el navegador bloquea el audio o el preview falla, suena el sintetizador
+        playSynth(track.id, track.genre || 'Pop');
+      });
+    }
+
     function playSynth(trackId, genre) {
       try {
-        stopSynth();
+        stopPlayback();
 
         if (!audioCtx) {
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1561,7 +1821,7 @@
 
           step++;
           if (step > 16) {
-            stopSynth();
+            stopPlayback();
             renderAll();
           }
         }, 260);
@@ -1571,13 +1831,16 @@
       }
     }
 
-    function stopSynth() {
+    function stopPlayback() {
       if (synthInterval) {
         clearInterval(synthInterval);
         synthInterval = null;
       }
+      if (previewAudio) {
+        previewAudio.pause();
+        previewAudio = null;
+      }
       playingTrackId = null;
-      renderAll();
     }
   </script>
 </body>
