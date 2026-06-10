@@ -315,6 +315,26 @@
         </button>
       </div>
 
+      <!-- Consejo: login de Spotify en el navegador para escuchar completo -->
+      <div id="spotify-login-tip" class="p-4 rounded-2xl bg-[#1DB954]/10 border border-[#1DB954]/30 flex items-start gap-3 hidden">
+        <span class="text-base leading-none mt-0.5">🎧</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-[11px] text-zinc-200 leading-relaxed">
+            ¿Tenés <strong>Spotify Premium</strong>? Iniciá sesión una sola vez en Spotify
+            desde este navegador y vas a escuchar las canciones <strong>completas</strong> dentro de CatApp.
+          </p>
+          <a href="https://accounts.spotify.com/es/login" target="_blank" rel="noopener"
+             class="inline-block mt-2 px-3.5 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-wide transition active:scale-95">
+            INICIAR SESIÓN EN SPOTIFY
+          </a>
+        </div>
+        <button onclick="dismissSpotifyTip()" title="Cerrar" class="p-1.5 rounded-lg text-zinc-400 hover:text-white transition shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
       <!-- Selector de Modos -->
       <div class="p-1 bg-zinc-950 rounded-2xl border border-zinc-900 flex">
         <button 
@@ -895,8 +915,17 @@
       if (searchLabel) searchLabel.innerText = isAdmin() ? 'Añadir' : 'Votar';
       if (!isAdmin() && currentSearchMode === 'playlist') setSearchMode('spotify');
 
+      // Consejo para escuchar completo (se muestra hasta que el invitado lo cierre)
+      document.getElementById('spotify-login-tip').classList.toggle('hidden',
+        localStorage.getItem('catapp_spotify_tip_oculto') === '1');
+
       updateSpotifyBannerUI();
       switchTab(isAdmin() ? 'soundtrack' : 'search');
+    }
+
+    function dismissSpotifyTip() {
+      localStorage.setItem('catapp_spotify_tip_oculto', '1');
+      document.getElementById('spotify-login-tip').classList.add('hidden');
     }
 
     // ==========================================
