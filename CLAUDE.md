@@ -36,3 +36,8 @@
   terminar, José pasa la Project URL y la clave anon para pegarlas en
   `index.html` y publicar. Hasta entonces, cada teléfono guarda su
   propia lista (modo local).
+- **Lista de invitados con códigos únicos y QR**: cuando José suba la
+  lista (~200 invitados), generar un código único por invitado
+  (editable por Cata/admins, tabla `guests` ya creada en el esquema)
+  y un QR por invitado para mostrar en persona. Armar panel de admin
+  para ver/editar códigos y descargar los QR.
