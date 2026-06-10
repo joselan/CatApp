@@ -31,11 +31,27 @@
 
 ## Pendientes del proyecto CatApp
 
-- **Activar Supabase** (modo fiesta compartida): seguir los 5 pasos de
-  `INSTRUCCIONES-SUPABASE.md` cuando José esté en la computadora. Al
-  terminar, José pasa la Project URL y la clave anon para pegarlas en
-  `index.html` y publicar. Hasta entonces, cada teléfono guarda su
-  propia lista (modo local).
+### ⏰ Para cuando José avise "estoy en la computadora"
+
+Guiarlo paso a paso, en orden:
+
+1. **Activar Supabase** (catálogo real de Spotify para todos + votación
+   compartida en vivo): seguir los 5 pasos de `INSTRUCCIONES-SUPABASE.md`.
+   Al terminar, José pasa la Project URL y la clave anon para pegarlas
+   en `index.html` y publicar. Hasta entonces, cada teléfono guarda su
+   propia lista (modo local) y el buscador es simulado.
+2. **Crear el Client ID de Google** (acceso de admins con Gmail, sin
+   códigos): seguir `INSTRUCCIONES-GOOGLE.md` (~5 min). José pasa el
+   Client ID para pegarlo en `GOOGLE_CLIENT_ID` de `index.html`.
+   El gesto: 5 toques sobre "Cata" en la pantalla de entrada.
+   Cuando funcione, evaluar eliminar los códigos de respaldo.
+3. **(Opcional) Autorizar a los otros 3 admins en Spotify**: dashboard
+   de Spotify → app CatApp → Settings → User Management → agregar
+   nombre + email de la cuenta de Spotify de Cata, Seba y Mari (para
+   que puedan usar CONECTAR SPOTIFY / exportar playlist).
+
+### 📋 Otros pendientes
+
 - **Lista de invitados con códigos únicos y QR**: cuando José suba la
   lista (~200 invitados), generar un código único por invitado
   (editable por Cata/admins, tabla `guests` ya creada en el esquema)
@@ -52,11 +68,3 @@
 | Mari | mariaisabel218@gmail.com | `MARI-P47X` |
 
 - Código general de invitados: `CATA2026` (constante `PARTY_CODES`).
-- Para que los otros 3 admins puedan usar "CONECTAR SPOTIFY",
-  agregarlos en el dashboard de Spotify → app CatApp → Settings →
-  User Management (nombre + email de su cuenta de Spotify).
-- **Acceso admin con Google**: crear el Client ID gratuito siguiendo
-  `INSTRUCCIONES-GOOGLE.md` (5 min, en la compu) y pegarlo en la
-  constante `GOOGLE_CLIENT_ID` de `index.html`. Hasta entonces, los
-  admins entran con su código de respaldo. El gesto: 5 toques sobre
-  "Cata" en la pantalla de entrada.
