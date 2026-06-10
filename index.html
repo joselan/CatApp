@@ -5,7 +5,14 @@
   <!-- Zoom con los dedos habilitado en toda la app (sin maximum-scale ni user-scalable=no) -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CatApp — Mis XV Cata</title>
-  
+
+  <!-- Instalable como app en el teléfono (PWA) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a1a20">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+
   <!-- Tailwind CSS CDN para renderizado inmediato -->
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -185,7 +192,7 @@
             <input 
               type="text" 
               id="login-code"
-              placeholder="Ej. FIESTA-15" 
+              placeholder="Ej. CATA2026"
               class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl py-3.5 pl-10 pr-4 text-xs text-white placeholder-zinc-400 outline-none transition-all duration-300 uppercase tracking-widest"
               required
             />
@@ -223,7 +230,7 @@
     <div class="w-full flex flex-col items-center gap-1.5 mt-4">
       <span class="text-[8px] text-zinc-300 uppercase tracking-widest font-extrabold">Invitaciones Rápidas de Prueba:</span>
       <div class="flex gap-2">
-        <button onclick="fillDemoCode('FIESTA-15', 'Santi')" class="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-[9px] font-mono text-zinc-200 hover:text-white transition">FIESTA-15</button>
+        <button onclick="fillDemoCode('CATA2026', 'Santi')" class="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-[9px] font-mono text-zinc-200 hover:text-white transition">CATA2026</button>
         <button onclick="fillDemoCode('CATA-ADMIN', 'Cata')" class="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-[9px] font-mono text-zinc-200 hover:text-white transition">CATA-ADMIN</button>
       </div>
     </div>
@@ -313,6 +320,14 @@
         >
           CONECTAR SPOTIFY
         </button>
+      </div>
+
+      <!-- Aviso de votación cerrada -->
+      <div id="voting-closed-banner" class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 hidden">
+        <p class="text-[11px] text-amber-200 leading-relaxed">
+          🪩 <strong>La votación ya cerró.</strong> ¡Gracias por votar! El DJ está preparando
+          el soundtrack con lo más elegido. Nos vemos en la pista el <strong>11.09.26</strong>.
+        </p>
       </div>
 
       <!-- Consejo: login de Spotify en el navegador para escuchar completo -->
@@ -580,6 +595,47 @@
       </div>
     </div>
 
+    <!-- MODAL: DEDICATORIA OPCIONAL AL VOTAR -->
+    <div id="dedication-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-6 hidden">
+      <div class="w-full max-w-sm bg-zinc-900/95 border border-zinc-700 p-6 rounded-3xl space-y-4 shadow-2xl">
+        <h3 class="text-sm font-bold text-zinc-100">💌 ¿Querés dedicarla?</h3>
+        <p id="dedication-song-title" class="text-[11px] text-zinc-400"></p>
+        <textarea
+          id="dedication-input"
+          rows="3"
+          maxlength="200"
+          placeholder="Escribí un mensajito para Cata (opcional)..."
+          class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl p-3 text-xs text-white placeholder-zinc-400 outline-none resize-none"
+        ></textarea>
+        <div class="flex gap-2">
+          <button onclick="closeDedicationModal()" class="flex-1 bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-xs py-3 rounded-xl transition">Ahora no</button>
+          <button onclick="submitDedication()" class="flex-1 bg-white text-black font-extrabold text-xs py-3 rounded-xl transition active:scale-95">Enviar 💌</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: MODO DJ (CABINA, SOLO ADMINS) -->
+    <div id="dj-modal" class="fixed inset-0 z-50 bg-black/95 overflow-y-auto hidden">
+      <div class="max-w-2xl mx-auto p-5 pb-16 space-y-5">
+        <div class="flex justify-between items-center sticky top-0 bg-black/95 py-3 z-10">
+          <div>
+            <h3 class="text-base font-extrabold text-white tracking-[0.2em] uppercase">🎧 Modo DJ</h3>
+            <p class="text-[10px] text-zinc-500 uppercase tracking-wider">XV de Cata — Ranking en vivo</p>
+          </div>
+          <button onclick="closeDjMode()" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div id="dj-pending-list" class="space-y-2"></div>
+
+        <h4 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pt-4">Ya sonaron</h4>
+        <div id="dj-played-list" class="space-y-1.5"></div>
+      </div>
+    </div>
+
     <!-- REPRODUCTOR EMBEBIDO DE SPOTIFY (completo con Premium; adelanto para el resto) -->
     <div id="spotify-player" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md hidden">
       <button onclick="closeSpotifyPlayer()" title="Cerrar reproductor" class="absolute -top-2.5 -right-2.5 z-50 w-7 h-7 rounded-full bg-zinc-700 border border-zinc-500 text-white flex items-center justify-center shadow-xl active:scale-95">
@@ -654,7 +710,7 @@
     //      Debe ser HTTPS (para pruebas locales usa http://127.0.0.1:PUERTO/index.html).
     //   3. Pega tu Client ID aquí abajo.
     const SPOTIFY_CLIENT_ID = '714f08a16c5d452ebda528fd1190ab4a';
-    const SPOTIFY_SCOPES = 'user-read-private playlist-read-private playlist-read-collaborative';
+    const SPOTIFY_SCOPES = 'user-read-private playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private';
     const SPOTIFY_AUTH_STORAGE_KEY = 'catapp_spotify_auth';
     const SPOTIFY_PKCE_STORAGE_KEY = 'catapp_spotify_pkce_verifier';
 
@@ -676,6 +732,21 @@
     // cada tema y las estadísticas para el DJ. Los invitados comunes solo
     // buscan y votan, sin ver resultados. ¡Mantené estos códigos en secreto!
     const ADMIN_CODES = ['CATA-ADMIN', 'DJ-CATA'];
+
+    // ==========================================
+    // REGLAS DE LA VOTACIÓN (EDITABLES)
+    // ==========================================
+    // Códigos generales de invitado (van en la invitación). Cuando se cargue
+    // la lista de invitados con códigos únicos, también valen los de la tabla
+    // "guests" de Supabase.
+    const PARTY_CODES = ['CATA2026'];
+
+    // Máximo de votos por invitado (los admins no tienen tope)
+    const MAX_VOTES_PER_GUEST = 10;
+
+    // Fecha y hora de cierre de la votación (hora argentina).
+    // Después de este momento los invitados ya no pueden votar ni cambiar votos.
+    const VOTING_DEADLINE = '2026-09-04T23:59:00-03:00';
 
     // BASE DE DATOS MOCK DE RESPALDO (VINCULADO AL RITMO DE LA FIESTA DE CATA)
     const SPOTIFY_CATALOG = [
@@ -848,15 +919,38 @@
       document.getElementById('login-name').value = name;
     }
 
+    // Busca el código en la lista de invitados de la fiesta (tabla guests)
+    async function findGuestByCode(code) {
+      if (!isSharedMode()) return null;
+      try {
+        const { data, error } = await sb.from('guests').select('id, name, code').eq('code', code).maybeSingle();
+        if (error) return null;
+        return data || null;
+      } catch (e) {
+        return null;
+      }
+    }
+
     // GESTIÓN DE ACCESO (MÉTODO ROBUSTO GLOBAL)
-    function handleLoginSubmit(event) {
+    async function handleLoginSubmit(event) {
       event.preventDefault();
-      
+
       const code = document.getElementById('login-code').value.trim().toUpperCase();
       const name = document.getElementById('login-name').value.trim();
 
       if (!code || !name) {
         showToast("Por favor, rellena todos los campos.", "warning");
+        return;
+      }
+
+      // Solo entran códigos reales: el general de la fiesta, los de admin,
+      // o un código único de la lista de invitados
+      const isValidCode = ADMIN_CODES.includes(code)
+        || PARTY_CODES.includes(code)
+        || !!(await findGuestByCode(code));
+
+      if (!isValidCode) {
+        showToast("Ese código de invitación no es válido. Revisá tu invitación.", "error");
         return;
       }
 
@@ -894,6 +988,39 @@
 
     function isAdmin() {
       return !!(currentUser && ADMIN_CODES.includes(currentUser.code));
+    }
+
+    // ==========================================
+    // REGLAS DE LA VOTACIÓN (TOPE DE VOTOS Y CIERRE)
+    // ==========================================
+    function myVoteCount() {
+      return songs.filter(s => s.voters && s.voters.includes(currentUser.id)).length;
+    }
+
+    function votingClosed() {
+      return Date.now() > new Date(VOTING_DEADLINE).getTime();
+    }
+
+    // Devuelve true si el invitado puede seguir votando; si no, avisa por qué
+    function checkVotingAllowed(isNewVote) {
+      if (isAdmin()) return true;
+      if (votingClosed()) {
+        showToast("La votación ya cerró. ¡Nos vemos en la pista el 11.09.26! 🪩", "warning");
+        return false;
+      }
+      if (isNewVote && myVoteCount() >= MAX_VOTES_PER_GUEST) {
+        showToast(`Llegaste al máximo de ${MAX_VOTES_PER_GUEST} votos. Podés quitar uno en Mi Espacio para cambiarlo.`, "warning");
+        return false;
+      }
+      return true;
+    }
+
+    function updateVotingBanners() {
+      const closedBanner = document.getElementById('voting-closed-banner');
+      const tip = document.getElementById('spotify-login-tip');
+      const closedForGuest = votingClosed() && !isAdmin();
+      if (closedBanner) closedBanner.classList.toggle('hidden', !closedForGuest);
+      if (closedForGuest && tip) tip.classList.add('hidden');
     }
 
     function showApp() {
@@ -1103,14 +1230,25 @@
       return spotifyAuth.accessToken;
     }
 
-    // Llamada genérica a la API de Spotify con refresco automático ante un 401
-    async function spotifyApi(path) {
+    // Llamada genérica a la API de Spotify con refresco automático ante un 401.
+    // options.method y options.body permiten crear recursos (p. ej. playlists).
+    async function spotifyApi(path, options = {}) {
       let token = await getValidSpotifyToken();
       if (!token) throw new Error('SPOTIFY_NO_AUTH');
 
-      let response = await fetch(`https://api.spotify.com/v1${path}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const buildInit = (tkn) => {
+        const init = {
+          method: options.method || 'GET',
+          headers: { 'Authorization': `Bearer ${tkn}` }
+        };
+        if (options.body) {
+          init.headers['Content-Type'] = 'application/json';
+          init.body = JSON.stringify(options.body);
+        }
+        return init;
+      };
+
+      let response = await fetch(`https://api.spotify.com/v1${path}`, buildInit(token));
 
       if (response.status === 401) {
         const refreshed = await refreshSpotifyToken();
@@ -1118,9 +1256,7 @@
           clearSpotifySession();
           throw new Error('SPOTIFY_NO_AUTH');
         }
-        response = await fetch(`https://api.spotify.com/v1${path}`, {
-          headers: { 'Authorization': `Bearer ${spotifyAuth.accessToken}` }
-        });
+        response = await fetch(`https://api.spotify.com/v1${path}`, buildInit(spotifyAuth.accessToken));
       }
 
       if (!response.ok) {
@@ -1220,14 +1356,18 @@
         addedBy: row.added_by,
         addedById: row.added_by_id,
         addedAt: new Date(row.created_at).getTime(),
+        playedAt: row.played_at ? new Date(row.played_at).getTime() : null,
         votes: voters.length,
         voters: voters,
-        voterNames: (row.votes || []).map(v => v.guest_name || 'Invitado')
+        voterNames: (row.votes || []).map(v => v.guest_name || 'Invitado'),
+        dedications: (row.votes || [])
+          .filter(v => v.message)
+          .map(v => ({ name: v.guest_name || 'Invitado', message: v.message }))
       };
     }
 
     async function loadPartySongs() {
-      const { data, error } = await sb.from('songs').select('*, votes(guest_id, guest_name)');
+      const { data, error } = await sb.from('songs').select('*, votes(guest_id, guest_name, message)');
       if (error) {
         console.error("Error al cargar la lista compartida:", error);
         showToast("No se pudo actualizar la lista compartida.", "warning");
@@ -1294,6 +1434,11 @@
     async function addSongRecord(track, options = {}) {
       const silent = options.silent === true;
 
+      if (!isAdmin() && (votingClosed() || myVoteCount() >= MAX_VOTES_PER_GUEST)) {
+        if (!silent) checkVotingAllowed(true);
+        return false;
+      }
+
       const existing = songs.find(s =>
         s.title.toLowerCase() === track.title.toLowerCase() ||
         (track.genre === 'Spotify' && s.spotifyId && s.spotifyId === track.id)
@@ -1344,9 +1489,11 @@
         newSong.voterNames = [currentUser.name];
         songs.push(newSong);
 
-        // El voto propio se registra aparte; si falla, el refresco lo corrige
-        sb.from('votes').insert({ song_id: data.id, guest_id: currentUser.id, guest_name: currentUser.name })
-          .then(({ error: voteError }) => { if (voteError) schedulePartyRefresh(); });
+        // El voto propio se registra aparte (esperamos la confirmación para
+        // que una dedicatoria inmediata encuentre el voto ya creado)
+        const { error: voteError } = await sb.from('votes')
+          .insert({ song_id: data.id, guest_id: currentUser.id, guest_name: currentUser.name });
+        if (voteError) schedulePartyRefresh();
 
         return 'added';
       }
@@ -1407,6 +1554,7 @@
       if (!currentUser) return;
 
       updateSpotifyBannerUI();
+      updateVotingBanners();
       if (activeTab === 'soundtrack') {
         renderSoundtrack();
       } else if (activeTab === 'search') {
@@ -1414,6 +1562,7 @@
       } else if (activeTab === 'profile') {
         renderProfile();
       }
+      renderDjMode();
     }
 
     // ==========================================
@@ -1440,8 +1589,22 @@
         });
       });
       const guests = Object.values(byGuest).sort((a, b) => b.titles.length - a.titles.length);
+      const dedications = songs.flatMap(s =>
+        (s.dedications || []).map(d => ({ name: d.name, message: d.message, song: s.title }))
+      );
 
       statsBox.innerHTML = `
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="openDjMode()"
+            class="py-3 rounded-2xl bg-white text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
+            🎧 Modo DJ
+          </button>
+          <button onclick="exportRankingToSpotify()"
+            class="py-3 rounded-2xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
+            Exportar a Spotify
+          </button>
+        </div>
+
         <div class="grid grid-cols-3 gap-2">
           <div class="bg-zinc-950/80 border border-zinc-900 rounded-2xl p-3 text-center">
             <span class="text-xl font-black text-white font-mono block">${songs.length}</span>
@@ -1466,6 +1629,20 @@
               <div class="border-t border-zinc-900 pt-2">
                 <p class="text-xs font-bold text-zinc-200">${escapeHtml(g.name)} <span class="text-zinc-500 font-mono">· ${g.titles.length} ${g.titles.length === 1 ? 'voto' : 'votos'}</span></p>
                 <p class="text-[10px] text-zinc-500 leading-relaxed">${escapeHtml(g.titles.join(' · '))}</p>
+              </div>
+            `).join('')}
+          </div>
+        </details>
+
+        <details class="bg-zinc-950/80 border border-zinc-900 rounded-2xl overflow-hidden">
+          <summary class="px-4 py-3 text-[10px] tracking-[0.2em] text-zinc-400 uppercase font-extrabold cursor-pointer select-none">
+            💌 Dedicatorias (${dedications.length})
+          </summary>
+          <div class="px-4 pb-3 space-y-2 max-h-56 overflow-y-auto no-scrollbar">
+            ${dedications.length === 0 ? '<p class="text-xs text-zinc-600 font-serif">Todavía no llegaron dedicatorias.</p>' : dedications.map(d => `
+              <div class="border-t border-zinc-900 pt-2">
+                <p class="text-xs text-zinc-200 leading-relaxed">“${escapeHtml(d.message)}”</p>
+                <p class="text-[10px] text-zinc-500 mt-0.5">— ${escapeHtml(d.name)}, votando <span class="italic">${escapeHtml(d.song)}</span></p>
               </div>
             `).join('')}
           </div>
@@ -1562,6 +1739,7 @@
                 <div class="flex items-center gap-1.5 text-[9px] text-zinc-650 font-semibold truncate">
                   <span class="w-1 h-1 rounded-full bg-zinc-700 flex-none"></span>
                   <span class="truncate">Pedida por ${escapeHtml(song.addedBy)}</span>
+                  ${song.playedAt ? '<span class="text-[8px] font-black tracking-wider bg-white/10 text-zinc-300 px-1.5 py-0.5 rounded border border-white/20 uppercase shrink-0">Ya sonó</span>' : ''}
                 </div>
               </div>
             </div>
@@ -1592,10 +1770,12 @@
       if (!song.voters) song.voters = [];
       if (!song.voterNames) song.voterNames = [];
 
-      // Actualización optimista: la interfaz responde al instante y el
-      // servidor confirma (o el refresco en vivo corrige) después
       const idx = song.voters.indexOf(currentUser.id);
       const hadVoted = idx !== -1;
+      if (!checkVotingAllowed(!hadVoted)) return;
+
+      // Actualización optimista: la interfaz responde al instante y el
+      // servidor confirma (o el refresco en vivo corrige) después
       if (hadVoted) {
         song.voters.splice(idx, 1);
         song.voterNames.splice(idx, 1);
@@ -1779,7 +1959,10 @@
       } else if (result === 'voted') {
         showToast(`¡Le sumaste tu voto a "${track.title}"!`, "success");
       }
-      if (result) renderAll();
+      if (result) {
+        renderAll();
+        openDedicationModal(songs.find(s => s.title.toLowerCase() === track.title.toLowerCase()));
+      }
     }
 
     // ==========================================
@@ -1945,7 +2128,8 @@
     function renderProfile() {
       const mine = songs.filter(s => s.addedById === currentUser.id);
       const myVotes = songs.filter(s => s.voters && s.voters.includes(currentUser.id));
-      document.getElementById('profile-contributions').innerText = myVotes.length;
+      document.getElementById('profile-contributions').innerText =
+        isAdmin() ? myVotes.length : `${myVotes.length}/${MAX_VOTES_PER_GUEST}`;
 
       const carousel = document.getElementById('suggestions-carousel');
       carousel.innerHTML = '';
@@ -2072,13 +2256,20 @@
       } else if (result === 'voted') {
         showToast(`¡Le sumaste tu voto a "${track.title}"!`, "success");
       }
-      if (result) renderAll();
+      if (result) {
+        renderAll();
+        openDedicationModal(songs.find(s => s.title.toLowerCase() === track.title.toLowerCase()));
+      }
     }
 
     async function deleteMySong(songId) {
       const song = songs.find(s => s.id === songId);
       // Cada invitado solo puede retirar sus propios pedidos
       if (!song || song.addedById !== currentUser.id) return;
+      if (!isAdmin() && votingClosed()) {
+        showToast("La votación ya cerró: la lista quedó congelada para el DJ.", "warning");
+        return;
+      }
 
       songs = songs.filter(s => s.id !== songId);
       saveSongsToStorage();
@@ -2091,6 +2282,179 @@
           console.error("Error al borrar la canción:", error);
           schedulePartyRefresh();
         }
+      }
+    }
+
+    // ==========================================
+    // DEDICATORIAS (MENSAJITOS PARA CATA AL VOTAR)
+    // ==========================================
+    let pendingDedicationSongId = null;
+
+    function openDedicationModal(song) {
+      if (!song) return;
+      pendingDedicationSongId = song.id;
+      document.getElementById('dedication-song-title').innerText = `"${song.title}" — ${song.artist}`;
+      document.getElementById('dedication-input').value = '';
+      document.getElementById('dedication-modal').classList.remove('hidden');
+    }
+
+    function closeDedicationModal() {
+      pendingDedicationSongId = null;
+      document.getElementById('dedication-modal').classList.add('hidden');
+    }
+
+    async function submitDedication() {
+      const message = document.getElementById('dedication-input').value.trim();
+      const songId = pendingDedicationSongId;
+      closeDedicationModal();
+      if (!message || !songId) return;
+
+      const song = songs.find(s => s.id === songId);
+      if (!song) return;
+
+      if (!song.dedications) song.dedications = [];
+      song.dedications.push({ name: currentUser.name, message: message });
+      saveSongsToStorage();
+
+      if (isSharedMode()) {
+        // La dedicatoria viaja en el voto del invitado
+        const { error } = await sb.from('votes')
+          .update({ message: message })
+          .eq('song_id', songId)
+          .eq('guest_id', currentUser.id);
+        if (error) console.error("Error al guardar la dedicatoria:", error);
+      }
+
+      showToast("¡Dedicatoria enviada! 💌", "success");
+    }
+
+    // ==========================================
+    // MODO DJ (CABINA): RANKING EN VIVO Y "YA SONÓ"
+    // ==========================================
+    function openDjMode() {
+      if (!isAdmin()) return;
+      document.getElementById('dj-modal').classList.remove('hidden');
+      renderDjMode();
+    }
+
+    function closeDjMode() {
+      document.getElementById('dj-modal').classList.add('hidden');
+    }
+
+    function renderDjMode() {
+      const modal = document.getElementById('dj-modal');
+      if (!modal || modal.classList.contains('hidden')) return;
+
+      const sorted = [...songs].sort((a, b) => b.votes - a.votes);
+      const pending = sorted.filter(s => !s.playedAt);
+      const played = sorted.filter(s => s.playedAt);
+
+      const pendingBox = document.getElementById('dj-pending-list');
+      pendingBox.innerHTML = pending.length === 0
+        ? '<p class="p-8 text-center text-zinc-600 text-sm font-serif">No quedan temas pendientes. ¡Sonó todo! 🎉</p>'
+        : pending.map((song, i) => `
+          <div class="flex items-center justify-between gap-4 p-4 bg-zinc-950/80 border border-zinc-800 rounded-2xl">
+            <div class="flex items-center gap-4 min-w-0">
+              <span class="text-2xl font-black font-mono ${i === 0 ? 'text-white' : 'text-zinc-600'} w-10 text-center shrink-0">${i + 1}</span>
+              <div class="min-w-0">
+                <h4 class="text-base font-extrabold text-zinc-100 truncate">${escapeHtml(song.title)}</h4>
+                <p class="text-xs text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="text-xl font-black text-white font-mono">${song.votes} ★</span>
+              <button onclick="markSongPlayed('${song.id}', true)"
+                class="px-4 py-2.5 rounded-xl bg-white text-black font-extrabold text-[10px] tracking-wider uppercase transition active:scale-95">
+                Ya sonó
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+      const playedBox = document.getElementById('dj-played-list');
+      playedBox.innerHTML = played.length === 0
+        ? '<p class="text-xs text-zinc-600 font-serif">Ninguna todavía.</p>'
+        : played.map(song => `
+          <div class="flex items-center justify-between gap-3 p-2.5 bg-zinc-950/40 border border-zinc-900 rounded-xl opacity-60">
+            <div class="min-w-0">
+              <h5 class="text-xs font-bold text-zinc-300 truncate line-through">${escapeHtml(song.title)}</h5>
+              <p class="text-[10px] text-zinc-600 truncate">${escapeHtml(song.artist)} · ${song.votes} votos</p>
+            </div>
+            <button onclick="markSongPlayed('${song.id}', false)"
+              class="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white font-bold text-[9px] tracking-wider uppercase transition shrink-0">
+              Volver
+            </button>
+          </div>
+        `).join('');
+    }
+
+    async function markSongPlayed(songId, played) {
+      if (!isAdmin()) return;
+      const song = songs.find(s => s.id === songId);
+      if (!song) return;
+
+      song.playedAt = played ? Date.now() : null;
+      saveSongsToStorage();
+      renderDjMode();
+      if (activeTab === 'soundtrack') renderSoundtrack();
+
+      if (isSharedMode()) {
+        const { error } = await sb.from('songs')
+          .update({ played_at: played ? new Date().toISOString() : null })
+          .eq('id', songId);
+        if (error) {
+          console.error("Error al marcar la canción:", error);
+          schedulePartyRefresh();
+        }
+      }
+    }
+
+    // ==========================================
+    // EXPORTAR EL RANKING A UNA PLAYLIST REAL DE SPOTIFY
+    // ==========================================
+    async function exportRankingToSpotify() {
+      if (!isAdmin()) return;
+
+      if (!isSpotifyConnected()) {
+        showToast("Primero conectá tu Spotify con el botón verde de la pestaña Añadir.", "warning");
+        return;
+      }
+
+      const rankedIds = [...songs]
+        .sort((a, b) => b.votes - a.votes)
+        .map(s => s.spotifyId)
+        .filter(Boolean);
+
+      if (rankedIds.length === 0) {
+        showToast("Todavía no hay canciones reales de Spotify en el ranking.", "warning");
+        return;
+      }
+
+      showToast("Creando la playlist en tu Spotify...", "info");
+      try {
+        const me = await spotifyApi('/me');
+        const fecha = new Date().toLocaleDateString('es-AR');
+        const playlist = await spotifyApi(`/users/${encodeURIComponent(me.id)}/playlists`, {
+          method: 'POST',
+          body: {
+            name: 'XV de Cata — Soundtrack',
+            description: `Ranking de votos de CatApp al ${fecha}. ¡Que suene! 🪩`,
+            public: false
+          }
+        });
+        await spotifyApi(`/playlists/${playlist.id}/tracks`, {
+          method: 'POST',
+          body: { uris: rankedIds.slice(0, 100).map(id => `spotify:track:${id}`) }
+        });
+        showToast(`✓ Playlist "XV de Cata — Soundtrack" creada con ${Math.min(rankedIds.length, 100)} temas. Buscala en tu Spotify.`, "success");
+      } catch (err) {
+        console.error("Error al exportar la playlist:", err);
+        showToast(
+          err.message === 'SPOTIFY_NO_AUTH'
+            ? "Tu sesión de Spotify expiró. Conectate de nuevo."
+            : "No se pudo crear la playlist. Desconectá y volvé a conectar Spotify para darle el permiso nuevo, y probá otra vez.",
+          "error"
+        );
       }
     }
 
