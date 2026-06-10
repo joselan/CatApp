@@ -8,6 +8,9 @@
   
   <!-- Tailwind CSS CDN para renderizado inmediato -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase JS: playlist compartida en vivo entre todos los invitados -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <!-- Google Fonts idénticas a la invitación física -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Alex+Brush&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -614,6 +617,17 @@
     const SPOTIFY_AUTH_STORAGE_KEY = 'catapp_spotify_auth';
     const SPOTIFY_PKCE_STORAGE_KEY = 'catapp_spotify_pkce_verifier';
 
+    // ==========================================
+    // CONFIGURACIÓN DE SUPABASE (MODO FIESTA COMPARTIDA)
+    // ==========================================
+    // Con esto la playlist, los votos y los pedidos se comparten EN VIVO entre
+    // todos los invitados, y la búsqueda usa el catálogo real de Spotify sin
+    // que nadie tenga que iniciar sesión. Pasos en INSTRUCCIONES-SUPABASE.md.
+    // Mientras estos valores estén vacíos, la app funciona en modo local
+    // (cada teléfono guarda su propia lista), igual que antes.
+    const SUPABASE_URL = '';      // ej: 'https://abcdefghijkl.supabase.co'
+    const SUPABASE_ANON_KEY = ''; // la clave "anon public" del proyecto
+
     // BASE DE DATOS MOCK DE RESPALDO (VINCULADO AL RITMO DE LA FIESTA DE CATA)
     const SPOTIFY_CATALOG = [
       { id: "c1", title: "Gata Only", artist: "FloyyMenor & Cris Mj", album: "Single", coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80", genre: "Reggaeton" },
@@ -659,6 +673,10 @@
     // Sesión oficial de Spotify (Authorization Code + PKCE)
     let spotifyAuth = null;        // { accessToken, refreshToken, expiresAt }
     let spotifyProfileName = null; // Nombre de la cuenta de Spotify conectada
+
+    // Cliente de Supabase (null = modo local en este teléfono)
+    let sb = null;
+    let partyRefreshTimer = null;
 
     // Reproductor (preview real de Spotify o sintetizador de respaldo)
     let audioCtx = null;
@@ -712,7 +730,7 @@
     }
 
     // Inicialización del sistema al cargar
-    window.onload = function() {
+    window.onload = async function() {
       // Intentar precargar la imagen de fondo de forma inteligente
       preloadBackgroundImage();
 
@@ -721,18 +739,26 @@
       handleSpotifyRedirect();
       if (isSpotifyConnected()) fetchSpotifyProfile();
 
-      const savedUser = localStorage.getItem('catapp_user');
-      const savedSongs = localStorage.getItem('catapp_songs');
+      initSupabase();
 
-      if (savedSongs) {
-        songs = JSON.parse(savedSongs);
+      const savedUser = localStorage.getItem('catapp_user');
+
+      if (isSharedMode()) {
+        // Lista compartida de la fiesta: viene del servidor y se sincroniza en vivo
+        await loadPartySongs();
+        startPartySync();
       } else {
-        songs = [
-          { id: "s-1", title: "Gata Only", artist: "FloyyMenor & Cris Mj", album: "Single", coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80", addedBy: "Cata (Cumpleañera)", addedById: "cata", addedAt: Date.now() - 3600000, votes: 21, voters: [] },
-          { id: "s-2", title: "Levels", artist: "Avicii", album: "Single", coverUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=150&q=80", addedBy: "DJ Residente", addedById: "dj", addedAt: Date.now() - 1800000, votes: 14, voters: [] },
-          { id: "s-3", title: "Classy 101", artist: "Feid & Young Miko", album: "Single", coverUrl: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=150&q=80", addedBy: "Santi", addedById: "santi", addedAt: Date.now(), votes: 8, voters: [] }
-        ];
-        saveSongsToStorage();
+        const savedSongs = localStorage.getItem('catapp_songs');
+        if (savedSongs) {
+          songs = JSON.parse(savedSongs);
+        } else {
+          songs = [
+            { id: "s-1", title: "Gata Only", artist: "FloyyMenor & Cris Mj", album: "Single", coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80", addedBy: "Cata (Cumpleañera)", addedById: "cata", addedAt: Date.now() - 3600000, votes: 21, voters: [] },
+            { id: "s-2", title: "Levels", artist: "Avicii", album: "Single", coverUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=150&q=80", addedBy: "DJ Residente", addedById: "dj", addedAt: Date.now() - 1800000, votes: 14, voters: [] },
+            { id: "s-3", title: "Classy 101", artist: "Feid & Young Miko", album: "Single", coverUrl: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=150&q=80", addedBy: "Santi", addedById: "santi", addedAt: Date.now(), votes: 8, voters: [] }
+          ];
+          saveSongsToStorage();
+        }
       }
 
       if (savedUser) {
@@ -763,6 +789,8 @@
     }
 
     function saveSongsToStorage() {
+      // En modo compartido la lista vive en el servidor, no en este teléfono
+      if (isSharedMode()) return;
       localStorage.setItem('catapp_songs', JSON.stringify(songs));
     }
 
@@ -783,10 +811,18 @@
         return;
       }
 
+      // Identidad estable por teléfono: así los votos y pedidos siguen siendo
+      // tuyos aunque cierres sesión y vuelvas a entrar
+      let deviceId = localStorage.getItem('catapp_device_id');
+      if (!deviceId) {
+        deviceId = 'guest_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('catapp_device_id', deviceId);
+      }
+
       currentUser = {
         code: code,
         name: name,
-        id: 'guest_' + Math.random().toString(36).substr(2, 9)
+        id: deviceId
       };
 
       localStorage.setItem('catapp_user', JSON.stringify(currentUser));
@@ -1061,6 +1097,12 @@
         connectBtn.innerText = "DESCONECTAR";
         connectBtn.onclick = disconnectSpotify;
         connectBtn.className = "px-3.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 font-bold text-[10px] tracking-wide transition active:scale-95 shrink-0";
+      } else if (isSharedMode()) {
+        statusText.innerText = "✓ Catálogo real activo para todos los invitados";
+        statusText.className = "text-[9px] text-emerald-400 font-bold uppercase tracking-wider";
+        connectBtn.innerText = "CONECTAR SPOTIFY";
+        connectBtn.onclick = authenticateSpotify;
+        connectBtn.className = "px-3.5 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-wide transition active:scale-95 shrink-0";
       } else {
         statusText.innerText = "Usando catálogo simulado de demostración";
         statusText.className = "text-[9px] text-zinc-500 font-medium";
@@ -1075,6 +1117,164 @@
       localStorage.removeItem(SPOTIFY_PKCE_STORAGE_KEY);
       showToast("Desconectado de Spotify. Volviendo a modo simulación.", "info");
       renderAll();
+    }
+
+    // ==========================================
+    // MODO FIESTA COMPARTIDA (SUPABASE)
+    // Playlist, votos y pedidos sincronizados en vivo entre los invitados
+    // ==========================================
+    function initSupabase() {
+      if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    }
+
+    function isSharedMode() {
+      return !!sb;
+    }
+
+    // Convierte una fila de la base de datos al formato interno de CatApp
+    function mapDbSong(row) {
+      const voters = (row.votes || []).map(v => v.guest_id);
+      return {
+        id: row.id,
+        title: row.title,
+        artist: row.artist,
+        album: row.album,
+        coverUrl: row.cover_url,
+        previewUrl: row.preview_url,
+        genre: row.genre,
+        addedBy: row.added_by,
+        addedById: row.added_by_id,
+        addedAt: new Date(row.created_at).getTime(),
+        votes: voters.length,
+        voters: voters
+      };
+    }
+
+    async function loadPartySongs() {
+      const { data, error } = await sb.from('songs').select('*, votes(guest_id)');
+      if (error) {
+        console.error("Error al cargar la lista compartida:", error);
+        showToast("No se pudo actualizar la lista compartida.", "warning");
+        return false;
+      }
+      songs = data.map(mapDbSong);
+      return true;
+    }
+
+    // Agrupa varios avisos de cambio en una sola recarga (los votos llegan en ráfagas)
+    function schedulePartyRefresh() {
+      if (!isSharedMode()) return;
+      clearTimeout(partyRefreshTimer);
+      partyRefreshTimer = setTimeout(async () => {
+        await loadPartySongs();
+        renderAll();
+      }, 350);
+    }
+
+    function startPartySync() {
+      sb.channel('party-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, schedulePartyRefresh)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, schedulePartyRefresh)
+        .subscribe();
+
+      // Respaldo por si el realtime se corta (wifi de salón de fiestas)
+      setInterval(schedulePartyRefresh, 25000);
+    }
+
+    // Búsqueda en el catálogo real vía el servidor propio: los invitados no
+    // necesitan cuenta de Spotify (la Edge Function usa la credencial de la app)
+    async function proxySpotify(query) {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/spotify-proxy?${query}`, {
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY
+        }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error((data.error && data.error.message) || data.error || `El servidor respondió ${response.status}`);
+      }
+      return data;
+    }
+
+    // Devuelve tracks reales: con la cuenta conectada del anfitrión o, para
+    // cualquier invitado, a través del servidor. null = solo hay catálogo mock.
+    async function searchSpotifyCatalog(q) {
+      if (isSpotifyConnected()) {
+        const data = await spotifyApi(`/search?q=${encodeURIComponent(q)}&type=track&limit=8`);
+        return data.tracks.items.map(mapSpotifyTrack);
+      }
+      if (isSharedMode()) {
+        const data = await proxySpotify(`q=${encodeURIComponent(q)}`);
+        return data.tracks.items.map(mapSpotifyTrack);
+      }
+      return null;
+    }
+
+    // Alta de canción unificada para ambos modos (búsqueda, sugerencias,
+    // import de playlist y detección por micrófono)
+    async function addSongRecord(track, options = {}) {
+      const silent = options.silent === true;
+
+      if (songs.some(s => s.title.toLowerCase() === track.title.toLowerCase())) {
+        if (!silent) showToast("Esa canción ya está en el soundtrack.", "warning");
+        return false;
+      }
+
+      if (isSharedMode()) {
+        const { data, error } = await sb.from('songs').insert({
+          title: track.title,
+          artist: track.artist,
+          album: track.album || "Sencillo",
+          cover_url: track.coverUrl,
+          preview_url: track.previewUrl || null,
+          genre: track.genre || "Pop",
+          spotify_id: track.genre === 'Spotify' ? track.id : null,
+          added_by: currentUser.name,
+          added_by_id: currentUser.id
+        }).select('*, votes(guest_id)').single();
+
+        if (error) {
+          // 23505 = violación de unicidad: otro invitado la agregó hace un instante
+          if (error.code === '23505') {
+            if (!silent) showToast("Esa canción ya está en el soundtrack.", "warning");
+          } else {
+            console.error("Error al guardar la canción:", error);
+            showToast("No se pudo guardar en la lista compartida. Intenta de nuevo.", "error");
+          }
+          return false;
+        }
+
+        const newSong = mapDbSong(data);
+        newSong.votes = 1;
+        newSong.voters = [currentUser.id];
+        songs.push(newSong);
+
+        // El voto propio se registra aparte; si falla, el refresco lo corrige
+        sb.from('votes').insert({ song_id: data.id, guest_id: currentUser.id })
+          .then(({ error: voteError }) => { if (voteError) schedulePartyRefresh(); });
+
+        return true;
+      }
+
+      songs.push({
+        id: 'track_' + Date.now() + Math.floor(Math.random() * 100),
+        title: track.title,
+        artist: track.artist,
+        album: track.album || "Sencillo",
+        coverUrl: track.coverUrl,
+        previewUrl: track.previewUrl || null,
+        addedBy: currentUser.name,
+        addedById: currentUser.id,
+        addedAt: Date.now(),
+        votes: 1,
+        voters: [currentUser.id],
+        genre: track.genre || "Pop"
+      });
+      saveSongsToStorage();
+      return true;
     }
 
     // ==========================================
@@ -1230,14 +1430,17 @@
       });
     }
 
-    function voteSong(songId) {
+    async function voteSong(songId) {
       const song = songs.find(s => s.id === songId);
       if (!song) return;
 
       if (!song.voters) song.voters = [];
 
+      // Actualización optimista: la interfaz responde al instante y el
+      // servidor confirma (o el refresco en vivo corrige) después
       const idx = song.voters.indexOf(currentUser.id);
-      if (idx !== -1) {
+      const hadVoted = idx !== -1;
+      if (hadVoted) {
         song.voters.splice(idx, 1);
         song.votes = Math.max(0, song.votes - 1);
         showToast("Voto cancelado.", "info");
@@ -1249,6 +1452,16 @@
 
       saveSongsToStorage();
       renderAll();
+
+      if (isSharedMode()) {
+        const { error } = hadVoted
+          ? await sb.from('votes').delete().eq('song_id', songId).eq('guest_id', currentUser.id)
+          : await sb.from('votes').insert({ song_id: songId, guest_id: currentUser.id });
+        if (error) {
+          console.error("Error al registrar el voto:", error);
+          schedulePartyRefresh();
+        }
+      }
     }
 
     // ==========================================
@@ -1294,11 +1507,11 @@
 
       clearTimeout(searchDebounceTimeout);
       searchDebounceTimeout = setTimeout(async () => {
-        if (isSpotifyConnected()) {
+        if (isSpotifyConnected() || isSharedMode()) {
           resultsContainer.innerHTML = `<div class="p-4 text-center text-zinc-500 text-xs">Buscando en Spotify real...</div>`;
           try {
-            const data = await spotifyApi(`/search?q=${encodeURIComponent(q)}&type=track&limit=8`);
-            renderSearchResults(data.tracks.items.map(mapSpotifyTrack));
+            const tracks = await searchSpotifyCatalog(q);
+            renderSearchResults(tracks);
           } catch (err) {
             console.error("Error al buscar en Spotify:", err);
             if (err.message === 'SPOTIFY_NO_AUTH') {
@@ -1375,36 +1588,15 @@
       });
     }
 
-    function addSongFromSearch(globalIndex) {
+    async function addSongFromSearch(globalIndex) {
       const track = window[`track_search_${globalIndex}`];
       if (!track) return;
 
-      if (songs.some(s => s.title.toLowerCase() === track.title.toLowerCase())) {
-        showToast("Esa canción ya está en el soundtrack.", "warning");
-        return;
+      if (await addSongRecord(track)) {
+        showToast(`"${track.title}" añadida al soundtrack.`, "success");
+        document.getElementById('spotify-input').value = '';
+        switchTab('soundtrack');
       }
-
-      const newSong = {
-        id: 'track_' + Date.now() + Math.floor(Math.random()*100),
-        title: track.title,
-        artist: track.artist,
-        album: track.album || "Sencillo",
-        coverUrl: track.coverUrl,
-        previewUrl: track.previewUrl || null,
-        addedBy: currentUser.name,
-        addedById: currentUser.id,
-        addedAt: Date.now(),
-        votes: 1,
-        voters: [currentUser.id],
-        genre: track.genre || "Pop"
-      };
-
-      songs.push(newSong);
-      saveSongsToStorage();
-      showToast(`"${track.title}" añadida al soundtrack.`, "success");
-      
-      document.getElementById('spotify-input').value = '';
-      switchTab('soundtrack');
     }
 
     // ==========================================
@@ -1430,7 +1622,7 @@
         return;
       }
 
-      if (isSpotifyConnected()) {
+      if (isSpotifyConnected() || isSharedMode()) {
         const match = url.match(/playlist\/([a-zA-Z0-9]+)/);
         if (!match) {
           showToast("El enlace no parece ser una playlist de Spotify.", "warning");
@@ -1439,7 +1631,11 @@
 
         showToast("Analizando tu playlist real de Spotify...", "info");
         try {
-          const data = await spotifyApi(`/playlists/${match[1]}`);
+          // Con la cuenta del anfitrión se leen también playlists privadas;
+          // a través del servidor, las públicas (suficiente para invitados)
+          const data = isSpotifyConnected()
+            ? await spotifyApi(`/playlists/${match[1]}`)
+            : await proxySpotify(`playlist=${match[1]}`);
 
           // Se ignoran episodios de podcast y temas eliminados (track null)
           const importedTracks = (data.tracks.items || [])
@@ -1469,7 +1665,7 @@
           showToast(
             err.message === 'SPOTIFY_NO_AUTH'
               ? "Tu sesión de Spotify expiró. Conéctate de nuevo."
-              : "No se pudo leer esa playlist. Verifica que el enlace sea correcto y la lista sea pública o tuya.",
+              : "No se pudo leer esa playlist. Verifica el enlace y que la lista sea pública.",
             "error"
           );
         }
@@ -1538,7 +1734,7 @@
       currentPreviewPlaylist = null;
     }
 
-    function confirmImport() {
+    async function confirmImport() {
       if (!currentPreviewPlaylist) return;
 
       const toAdd = currentPreviewPlaylist.tracks.filter(t => selectedImportTracks[t.id]);
@@ -1548,28 +1744,12 @@
       }
 
       let count = 0;
-      toAdd.forEach(track => {
-        const alreadyAdded = songs.some(s => s.title.toLowerCase() === track.title.toLowerCase());
-        if (!alreadyAdded) {
-          songs.push({
-            id: 'import_' + Math.random().toString(36).substr(2, 9),
-            title: track.title,
-            artist: track.artist,
-            album: track.album || "Importado",
-            coverUrl: track.coverUrl,
-            previewUrl: track.previewUrl || null,
-            addedBy: currentUser.name,
-            addedById: currentUser.id,
-            addedAt: Date.now(),
-            votes: 1,
-            voters: [currentUser.id],
-            genre: track.genre || "Pop"
-          });
+      for (const track of toAdd) {
+        if (await addSongRecord(track, { silent: true })) {
           count++;
         }
-      });
+      }
 
-      saveSongsToStorage();
       showToast(`¡Se importaron ${count} temas al boliche!`, "success");
       closeImportPreview();
       document.getElementById('playlist-url-input').value = '';
@@ -1659,38 +1839,30 @@
       }
     }
 
-    function addSongFromTrack(track) {
-      if (songs.some(s => s.title.toLowerCase() === track.title.toLowerCase())) {
-        showToast("Esa canción ya está añadida.", "warning");
-        return;
+    async function addSongFromTrack(track) {
+      if (await addSongRecord(track)) {
+        showToast(`"${track.title}" añadida con éxito!`, "success");
+        switchTab('soundtrack');
       }
-
-      const newSong = {
-        id: 'track_' + Date.now(),
-        title: track.title,
-        artist: track.artist,
-        album: track.album || "Favorita",
-        coverUrl: track.coverUrl,
-        previewUrl: track.previewUrl || null,
-        addedBy: currentUser.name,
-        addedById: currentUser.id,
-        addedAt: Date.now(),
-        votes: 1,
-        voters: [currentUser.id],
-        genre: track.genre || "Pop"
-      };
-
-      songs.push(newSong);
-      saveSongsToStorage();
-      showToast(`"${track.title}" añadida con éxito!`, "success");
-      switchTab('soundtrack');
     }
 
-    function deleteMySong(songId) {
+    async function deleteMySong(songId) {
+      const song = songs.find(s => s.id === songId);
+      // Cada invitado solo puede retirar sus propios pedidos
+      if (!song || song.addedById !== currentUser.id) return;
+
       songs = songs.filter(s => s.id !== songId);
       saveSongsToStorage();
       showToast("Canción retirada del soundtrack.", "info");
       renderAll();
+
+      if (isSharedMode()) {
+        const { error } = await sb.from('songs').delete().eq('id', songId);
+        if (error) {
+          console.error("Error al borrar la canción:", error);
+          schedulePartyRefresh();
+        }
+      }
     }
 
     // ==========================================
