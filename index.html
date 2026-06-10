@@ -192,7 +192,7 @@
             <input 
               type="text" 
               id="login-code"
-              placeholder="Ej. CATA2026"
+              placeholder="Ingresá tu código"
               class="w-full bg-white/10 border border-white/20 focus:border-white/50 rounded-xl py-3.5 pl-10 pr-4 text-xs text-white placeholder-zinc-400 outline-none transition-all duration-300 uppercase tracking-widest"
               required
             />
@@ -226,14 +226,6 @@
       </form>
     </div>
 
-    <!-- INVITACIONES DE PRUEBA -->
-    <div class="w-full flex flex-col items-center gap-1.5 mt-4">
-      <span class="text-[8px] text-zinc-300 uppercase tracking-widest font-extrabold">Invitaciones Rápidas de Prueba:</span>
-      <div class="flex gap-2">
-        <button onclick="fillDemoCode('CATA2026', 'Santi')" class="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-[9px] font-mono text-zinc-200 hover:text-white transition">CATA2026</button>
-        <button onclick="fillDemoCode('CATA-ADMIN', 'Cata')" class="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-[9px] font-mono text-zinc-200 hover:text-white transition">CATA-ADMIN</button>
-      </div>
-    </div>
   </div>
 
   <!-- ==========================================
@@ -726,12 +718,16 @@
     const SUPABASE_ANON_KEY = ''; // la clave "anon public" del proyecto
 
     // ==========================================
-    // CÓDIGOS DE ADMINISTRADOR (CATA, DJ, ORGANIZADORES)
+    // CÓDIGOS DE ADMINISTRADOR (4 ADMINS)
     // ==========================================
     // Quien entre con uno de estos códigos ve el ranking de votos, quién votó
-    // cada tema y las estadísticas para el DJ. Los invitados comunes solo
-    // buscan y votan, sin ver resultados. ¡Mantené estos códigos en secreto!
-    const ADMIN_CODES = ['CATA-ADMIN', 'DJ-CATA'];
+    // cada tema, las estadísticas, el Modo DJ y las dedicatorias.
+    // ¡Cada admin guarda su código en secreto!
+    //   José (joselanglois@gmail.com)      → JOSE-K84M
+    //   Cata (catalinagodoy831@gmail.com)  → CATA-R29Q
+    //   Seba (sgodoy608@gmail.com)         → SEBA-T63V
+    //   Mari (mariaisabel218@gmail.com)    → MARI-P47X
+    const ADMIN_CODES = ['JOSE-K84M', 'CATA-R29Q', 'SEBA-T63V', 'MARI-P47X'];
 
     // ==========================================
     // REGLAS DE LA VOTACIÓN (EDITABLES)
@@ -912,11 +908,6 @@
       // En modo compartido la lista vive en el servidor, no en este teléfono
       if (isSharedMode()) return;
       localStorage.setItem('catapp_songs', JSON.stringify(songs));
-    }
-
-    function fillDemoCode(code, name) {
-      document.getElementById('login-code').value = code;
-      document.getElementById('login-name').value = name;
     }
 
     // Busca el código en la lista de invitados de la fiesta (tabla guests)
