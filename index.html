@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Zoom con los dedos habilitado en toda la app (sin maximum-scale ni user-scalable=no) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CatApp — Mis XV Cata</title>
   
   <!-- Tailwind CSS CDN para renderizado inmediato -->
@@ -39,7 +40,7 @@
 
     /* Fondo base por defecto con gradiente de noche */
     .save-the-date-bg {
-      background: radial-gradient(circle at top, #121214 0%, #000000 100%);
+      background: radial-gradient(circle at top, #26262c 0%, #0a0a0c 100%);
       background-size: cover;
       background-position: center top;
       background-repeat: no-repeat;
@@ -47,10 +48,16 @@
     }
 
     /* Clase activa que se inyecta por JS cuando "fondo-login.jpeg" carga con éxito.
-       La imagen es la invitación original pero SIN el texto horneado: los textos
-       (MIS XV / Cata / 11.09.26) se renderizan en HTML, siempre bien arriba. */
+       La imagen es la invitación original pero SIN el texto horneado y con las
+       sombras levantadas (menos negra): los textos (MIS XV / Cata / 11.09.26)
+       se renderizan en HTML, siempre bien arriba. */
     .bg-image-loaded {
-      background-image: linear-gradient(to bottom, rgba(0,0,0,0) 48%, rgba(0,0,0,0.82) 100%), url('fondo-login.jpeg') !important;
+      background-image: linear-gradient(to bottom, rgba(0,0,0,0) 58%, rgba(0,0,0,0.55) 100%), url('fondo-login.jpeg') !important;
+    }
+
+    /* Resplandor suave para que el texto del Save the Date resalte sobre la foto */
+    .text-glow {
+      text-shadow: 0 0 26px rgba(255, 255, 255, 0.5), 0 2px 12px rgba(0, 0, 0, 0.85);
     }
 
     /* Con la imagen cargada, la bola de espejos HTML se convierte en un espaciador
@@ -154,9 +161,9 @@
 
     <!-- TEXTOS DEL SAVE THE DATE (siempre visibles, bien arriba sobre la imagen) -->
     <div id="html-replica-header" class="text-center -mt-6 w-full relative z-10">
-      <span class="text-[10px] tracking-[0.45em] font-serif text-zinc-400 font-bold uppercase">MIS XV</span>
-      <h1 class="text-6xl font-cursive text-white tracking-wide mt-1 mb-2 select-none">Cata</h1>
-      <p class="text-base font-serif tracking-[0.3em] text-white/95 font-semibold">11.09.26</p>
+      <span class="text-[11px] tracking-[0.45em] font-serif text-zinc-100 font-bold uppercase text-glow">MIS XV</span>
+      <h1 class="text-7xl font-cursive text-white tracking-wide mt-1 mb-2 select-none text-glow">Cata</h1>
+      <p class="text-lg font-serif tracking-[0.3em] text-white font-semibold text-glow">11.09.26</p>
     </div>
 
     <!-- CAJA DE ACCESO MINIMALISTA (Ubicada en la base para no tapar los textos de tu foto) -->
