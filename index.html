@@ -22,6 +22,9 @@
   <!-- Google Identity Services: acceso de administradores con cuenta de Google -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
+  <!-- Generador de códigos QR (para las invitaciones) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
   <!-- Google Fonts idénticas a la invitación física -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Alex+Brush&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
@@ -229,6 +232,53 @@
       </form>
     </div>
 
+  </div>
+
+  <!-- MODAL: PANEL DE INVITADOS (SOLO ADMINS) -->
+  <div id="guests-modal" class="fixed inset-0 z-50 bg-black/95 overflow-y-auto hidden">
+    <div class="max-w-2xl mx-auto p-5 pb-16 space-y-4">
+      <div class="flex justify-between items-center sticky top-0 bg-black/95 py-3 z-10">
+        <div>
+          <h3 class="text-base font-extrabold text-white tracking-[0.2em] uppercase">👥 Invitados</h3>
+          <p id="guests-subtitle" class="text-[10px] text-zinc-500 uppercase tracking-wider">Códigos e invitaciones</p>
+        </div>
+        <button onclick="closeGuestsPanel()" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="guests-stats" class="grid grid-cols-4 gap-2"></div>
+
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-500">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </span>
+        <input
+          type="text"
+          id="guests-search"
+          oninput="renderGuestsPanel()"
+          placeholder="Buscar invitado o código..."
+          class="w-full bg-zinc-950 border border-zinc-800 focus:border-zinc-500 rounded-2xl py-3 pl-10 pr-4 text-xs text-white placeholder-zinc-600 outline-none"
+        />
+      </div>
+
+      <div id="guests-list" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: QR DE UNA INVITACIÓN -->
+  <div id="qr-modal" class="fixed inset-0 z-[60] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 hidden" onclick="closeQrModal()">
+    <div class="w-full max-w-xs bg-white p-6 rounded-3xl text-center space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+      <h3 id="qr-guest-name" class="text-base font-extrabold text-zinc-900"></h3>
+      <div id="qr-canvas" class="flex justify-center"></div>
+      <p class="text-2xl font-black font-mono tracking-[0.3em] text-zinc-900" id="qr-guest-code"></p>
+      <p class="text-[11px] text-zinc-500 leading-relaxed">El invitado escanea el QR y entra a CatApp con su código ya cargado.</p>
+      <button onclick="closeQrModal()" class="w-full bg-zinc-900 text-white font-bold text-xs py-3 rounded-xl transition active:scale-95">Cerrar</button>
+    </div>
   </div>
 
   <!-- MODAL: ACCESO DE ADMINISTRADORES (5 toques sobre "Cata" en el login) -->
@@ -777,6 +827,106 @@
     // Después de este momento los invitados ya no pueden votar ni cambiar votos.
     const VOTING_DEADLINE = '2026-09-04T23:59:00-03:00';
 
+    // ==========================================
+    // LISTA DE INVITADOS (IMPORTADA DEL EXCEL) — 91 invitaciones, 175 personas
+    // Cada invitación tiene un código único (editable desde el panel 👥
+    // Invitados de los admins) y su QR. En modo compartido, la lista se sube
+    // sola a Supabase la primera vez que un admin abre la app.
+    // ==========================================
+    const GUEST_SEED = [
+      {"grupo": "Familia y amigos", "name": "NOSOTROS", "code": "4WNA", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "LILIANA Y JORGE", "code": "R7CY", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "JOSE Y FLOR", "code": "8FT5", "adults": 2, "kids": 1, "under5": 1, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "MAUGE", "code": "QMSJ", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "OSVALDO", "code": "EV3J", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "PATRI Y NORA", "code": "3TCQ", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "COCO", "code": "PDVU", "adults": 1, "kids": 0, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "MADE Y CARLOS", "code": "X49T", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "LILI Y RUBEN", "code": "SYWU", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "MONICA, LULA Y GONZI", "code": "22WM", "adults": 3, "kids": 0, "under5": 0, "total": 3, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Familia y amigos", "name": "LORE Y SERGIO", "code": "RB9Q", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Vanesa", "name": "VANESA", "code": "3X43", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Vanesa", "name": "NADIA", "code": "FQ89", "adults": 2, "kids": 1, "under5": 0, "total": 3, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Vanesa", "name": "GABY", "code": "E6VP", "adults": 2, "kids": 1, "under5": 0, "total": 3, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Vanesa", "name": "MAXI", "code": "AJY8", "adults": 2, "kids": 1, "under5": 0, "total": 3, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Mariela", "name": "MARIELA", "code": "7XBU", "adults": 2, "kids": 3, "under5": 0, "total": 5, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Mariela", "name": "PAO", "code": "H3VF", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": false, "confirmed": "pendiente", "notes": "Ver con cuántos hijos viene"},
+      {"grupo": "Grupo Mariela", "name": "ROMIP", "code": "FA3W", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Mariela", "name": "VERO", "code": "NCUG", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Mariela", "name": "LAQUA", "code": "Y7SF", "adults": 1, "kids": 0, "under5": 0, "total": 1, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Mariela", "name": "JOSE", "code": "UYUY", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Mariela", "name": "JESI", "code": "YSYY", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Mariela", "name": "ROMI G", "code": "F53D", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros adultos", "name": "MARIA MARTA (médica)", "code": "Y8N3", "adults": 1, "kids": 0, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros adultos", "name": "GABY Y ARIEL", "code": "V9ZJ", "adults": 3, "kids": 0, "under5": 0, "total": 3, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros adultos", "name": "LUZ", "code": "HF6S", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros adultos", "name": "LUCHI", "code": "4TZY", "adults": 1, "kids": 0, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros adultos", "name": "PAO P", "code": "8VMN", "adults": 1, "kids": 0, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros adultos", "name": "CHOCHI", "code": "HZSM", "adults": 1, "kids": 0, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "MAROTE", "code": "UCQC", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "ALDO", "code": "MH3T", "adults": 1, "kids": 0, "under5": 0, "total": 1, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "PABLO Y PATRICIA", "code": "FQAZ", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "JULY", "code": "4MV3", "adults": 2, "kids": 0, "under5": 1, "total": 3, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "MARICE", "code": "XS2U", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "CARO", "code": "ZRNU", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "BOLY", "code": "KEZ6", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "LUCHO", "code": "B4F2", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "JAVI", "code": "T9MJ", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "MAPI", "code": "2TAT", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Grupo Marote", "name": "ALE", "code": "X7G4", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros", "name": "NURIA", "code": "77RM", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": "Ver si viene Lucas"},
+      {"grupo": "Otros", "name": "MENE", "code": "WAG3", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros", "name": "CARLA", "code": "K5WB", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros", "name": "MARIANA", "code": "2GQZ", "adults": 2, "kids": 1, "under5": 1, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros", "name": "MORE Y LUPE", "code": "7TVC", "adults": 0, "kids": 2, "under5": 0, "total": 2, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros", "name": "SAGAS", "code": "KCUE", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": "Ver si viene Nico"},
+      {"grupo": "Otros", "name": "CASSANO", "code": "66PA", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": "Ver si viene Salvi"},
+      {"grupo": "Otros", "name": "POBLET", "code": "DMHM", "adults": 2, "kids": 2, "under5": 0, "total": 4, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Otros", "name": "CECI B Y ANNIE", "code": "D2JK", "adults": 2, "kids": 0, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Delfi", "code": "JBXF", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Lara", "code": "UZYD", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Cata M", "code": "DRRY", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Delfi V", "code": "FJ73", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Oteiza", "code": "9JFW", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Sofi F", "code": "67AN", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Beni", "code": "7DKU", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Agustin E", "code": "645M", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Geronimo", "code": "6S6D", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Joaco Poseiro", "code": "N8NM", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Valen P", "code": "48NU", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Francisco C", "code": "BZRB", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Lautaro P", "code": "XYPU", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Bauti San Martin", "code": "XN8U", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Cami", "code": "B5CC", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Sabri", "code": "EET6", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Pili Landi", "code": "KWEX", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Isa", "code": "VWNA", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Agus Natal", "code": "C6T8", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Esme", "code": "99NY", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Cami Jaime", "code": "JFRU", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Cami Jung", "code": "5DK2", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Juani Ferrer", "code": "VZW8", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Martin Rodriguez", "code": "5DVX", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Santi Quintana", "code": "Y6YK", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Lautaro", "code": "36QP", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Agus Prezioso", "code": "P9V6", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Tomas Eche", "code": "PKEP", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Magui Cinca", "code": "T2QH", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Joaco Cinca", "code": "U24G", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Iñaki", "code": "22NG", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Leopoldo", "code": "SBK6", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Joaco Vazquez", "code": "V3KZ", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Facundo Provera", "code": "MN2T", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Colegio Cata", "name": "Mati Dejulis", "code": "JYB9", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": true, "confirmed": "pendiente", "notes": ""},
+      {"grupo": "Suplentes", "name": "Chloe", "code": "7C7S", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": false, "confirmed": "pendiente", "notes": "Lista de espera"},
+      {"grupo": "Suplentes", "name": "Sofi Sanchez", "code": "FM5V", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": false, "confirmed": "pendiente", "notes": "Lista de espera"},
+      {"grupo": "Suplentes", "name": "Juli Gaminera", "code": "A7DU", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": false, "confirmed": "pendiente", "notes": "Lista de espera"},
+      {"grupo": "Suplentes", "name": "Agus Fassini", "code": "TYXE", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": false, "confirmed": "pendiente", "notes": "Lista de espera"},
+      {"grupo": "Suplentes", "name": "Juli Alvarez", "code": "7GER", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": false, "confirmed": "pendiente", "notes": "Lista de espera"},
+      {"grupo": "Suplentes", "name": "Guille y Franco", "code": "VRP6", "adults": 0, "kids": 2, "under5": 0, "total": 2, "saveTheDate": false, "confirmed": "pendiente", "notes": "Lista de espera"},
+      {"grupo": "Suplentes", "name": "Bruno Bestoso", "code": "7RBZ", "adults": 0, "kids": 1, "under5": 0, "total": 1, "saveTheDate": false, "confirmed": "pendiente", "notes": "Lista de espera"}
+    ];
+
     // BASE DE DATOS MOCK DE RESPALDO (VINCULADO AL RITMO DE LA FIESTA DE CATA)
     const SPOTIFY_CATALOG = [
       { id: "c1", title: "Gata Only", artist: "FloyyMenor & Cris Mj", album: "Single", coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80", genre: "Reggaeton" },
@@ -890,13 +1040,22 @@
 
       initSupabase();
 
+      // Si el invitado llega desde un QR (?codigo=XXXX), el código viene precargado
+      const urlCode = new URLSearchParams(window.location.search).get('codigo');
+      if (urlCode) document.getElementById('login-code').value = urlCode.toUpperCase();
+
+      // La sesión guardada se restaura antes de cargar invitados
+      // (define si es admin, p. ej. para subir la lista la primera vez)
       const savedUser = localStorage.getItem('catapp_user');
+      if (savedUser) currentUser = JSON.parse(savedUser);
 
       if (isSharedMode()) {
         // Lista compartida de la fiesta: viene del servidor y se sincroniza en vivo
         await loadPartySongs();
+        await loadGuests();
         startPartySync();
       } else {
+        loadLocalGuests();
         const savedSongs = localStorage.getItem('catapp_songs');
         if (savedSongs) {
           songs = JSON.parse(savedSongs);
@@ -910,8 +1069,7 @@
         }
       }
 
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
+      if (currentUser) {
         showApp();
       } else {
         showLogin();
@@ -943,8 +1101,10 @@
       localStorage.setItem('catapp_songs', JSON.stringify(songs));
     }
 
-    // Busca el código en la lista de invitados de la fiesta (tabla guests)
+    // Busca el código en la lista de invitados de la fiesta
     async function findGuestByCode(code) {
+      const local = guests.find(g => g.code === code);
+      if (local) return local;
       if (!isSharedMode()) return null;
       try {
         const { data, error } = await sb.from('guests').select('id, name, code').eq('code', code).maybeSingle();
@@ -1496,6 +1656,11 @@
       clearTimeout(partyRefreshTimer);
       partyRefreshTimer = setTimeout(async () => {
         await loadPartySongs();
+        // La lista de invitados solo la miran los admins: se refresca para ellos
+        if (isAdmin()) {
+          await loadGuests();
+          renderGuestsPanel();
+        }
         renderAll();
       }, 350);
     }
@@ -1504,6 +1669,7 @@
       sb.channel('party-live')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, schedulePartyRefresh)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, schedulePartyRefresh)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'guests' }, schedulePartyRefresh)
         .subscribe();
 
       // Respaldo por si el realtime se corta (wifi de salón de fiestas)
@@ -1632,6 +1798,282 @@
     }
 
     // ==========================================
+    // INVITADOS: DATOS, PANEL DE ADMINS Y QR
+    // ==========================================
+    let guests = [];
+
+    function mapDbGuest(row) {
+      return {
+        id: row.id,
+        grupo: row.group_name || 'Otros',
+        name: row.name,
+        code: row.code,
+        adults: row.adults || 0,
+        kids: row.kids || 0,
+        under5: row.under5 || 0,
+        total: row.total || 0,
+        saveTheDate: !!row.save_the_date,
+        confirmed: row.confirmed || 'pendiente',
+        notes: row.notes || ''
+      };
+    }
+
+    function loadLocalGuests() {
+      try {
+        const raw = localStorage.getItem('catapp_guests');
+        if (raw) {
+          guests = JSON.parse(raw);
+          return;
+        }
+      } catch (e) { /* lista corrupta: se regenera del Excel */ }
+      guests = GUEST_SEED.map((g, i) => Object.assign({ id: 'g' + i }, g));
+      saveLocalGuests();
+    }
+
+    function saveLocalGuests() {
+      if (!isSharedMode()) localStorage.setItem('catapp_guests', JSON.stringify(guests));
+    }
+
+    async function loadGuests() {
+      if (!isSharedMode()) {
+        loadLocalGuests();
+        return;
+      }
+
+      const { data, error } = await sb.from('guests').select('*');
+      if (error) {
+        console.error("Error al cargar invitados:", error);
+        loadLocalGuests();
+        return;
+      }
+
+      if (data.length === 0 && isAdmin()) {
+        // Primera vez: un admin sube la lista del Excel a la base compartida
+        const payload = GUEST_SEED.map(g => ({
+          group_name: g.grupo, name: g.name, code: g.code,
+          adults: g.adults, kids: g.kids, under5: g.under5, total: g.total,
+          save_the_date: g.saveTheDate, confirmed: g.confirmed, notes: g.notes
+        }));
+        const { data: inserted, error: insErr } = await sb.from('guests').insert(payload).select('*');
+        if (insErr) {
+          console.error("Error al subir la lista de invitados:", insErr);
+          loadLocalGuests();
+          return;
+        }
+        guests = inserted.map(mapDbGuest);
+        showToast("Lista de invitados cargada en la base compartida ✓", "success");
+        return;
+      }
+
+      // Orden estable: por grupo (según el Excel) y nombre
+      const groupOrder = [];
+      GUEST_SEED.forEach(g => { if (!groupOrder.includes(g.grupo)) groupOrder.push(g.grupo); });
+      guests = data.map(mapDbGuest).sort((a, b) => {
+        const ga = groupOrder.indexOf(a.grupo), gb = groupOrder.indexOf(b.grupo);
+        if (ga !== gb) return (ga === -1 ? 99 : ga) - (gb === -1 ? 99 : gb);
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    async function updateGuest(guestId, fields) {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest) return false;
+
+      Object.assign(guest, fields);
+      saveLocalGuests();
+      renderGuestsPanel();
+
+      if (isSharedMode()) {
+        const dbFields = {};
+        if ('code' in fields) dbFields.code = fields.code;
+        if ('saveTheDate' in fields) dbFields.save_the_date = fields.saveTheDate;
+        if ('confirmed' in fields) dbFields.confirmed = fields.confirmed;
+        if ('notes' in fields) dbFields.notes = fields.notes;
+
+        const { error } = await sb.from('guests').update(dbFields).eq('id', guestId);
+        if (error) {
+          console.error("Error al actualizar invitado:", error);
+          showToast(error.code === '23505' ? "Ese código ya lo tiene otro invitado." : "No se pudo guardar el cambio.", "error");
+          await loadGuests();
+          renderGuestsPanel();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    async function openGuestsPanel() {
+      if (!isAdmin()) return;
+      document.getElementById('guests-modal').classList.remove('hidden');
+      if (guests.length === 0) await loadGuests();
+      renderGuestsPanel();
+    }
+
+    function closeGuestsPanel() {
+      document.getElementById('guests-modal').classList.add('hidden');
+    }
+
+    function renderGuestsPanel() {
+      const modal = document.getElementById('guests-modal');
+      if (!modal || modal.classList.contains('hidden')) return;
+
+      // Tarjetas de resumen (cuentan personas, no invitaciones)
+      const personas = guests.reduce((acc, g) => acc + (g.total || 0), 0);
+      const stdPersonas = guests.filter(g => g.saveTheDate).reduce((acc, g) => acc + (g.total || 0), 0);
+      const confPersonas = guests.filter(g => g.confirmed === 'si').reduce((acc, g) => acc + (g.total || 0), 0);
+      document.getElementById('guests-stats').innerHTML = [
+        [guests.length, 'Invitaciones'],
+        [personas, 'Personas'],
+        [stdPersonas, 'Save the Date'],
+        [confPersonas, 'Confirmadas']
+      ].map(([n, label]) => `
+        <div class="bg-zinc-950/80 border border-zinc-900 rounded-2xl p-2.5 text-center">
+          <span class="text-lg font-black text-white font-mono block">${n}</span>
+          <span class="text-[7px] text-zinc-500 uppercase font-bold tracking-wider">${label}</span>
+        </div>
+      `).join('');
+
+      const query = (document.getElementById('guests-search').value || '').trim().toLowerCase();
+      const filtered = guests.filter(g =>
+        !query ||
+        g.name.toLowerCase().includes(query) ||
+        g.code.toLowerCase().includes(query) ||
+        (g.grupo || '').toLowerCase().includes(query)
+      );
+
+      const CONF_LABELS = { pendiente: '⏳ Pendiente', si: '✅ Confirmó', no: '❌ No viene' };
+      const CONF_STYLES = {
+        pendiente: 'bg-zinc-900 border-zinc-800 text-zinc-400',
+        si: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300',
+        no: 'bg-red-500/10 border-red-500/40 text-red-300'
+      };
+
+      let html = '';
+      let lastGroup = null;
+      filtered.forEach(g => {
+        if (g.grupo !== lastGroup) {
+          lastGroup = g.grupo;
+          html += `<h4 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pt-3 pb-1">${escapeHtml(g.grupo)}</h4>`;
+        }
+
+        const partes = [];
+        if (g.adults) partes.push(`${g.adults} adulto${g.adults > 1 ? 's' : ''}`);
+        if (g.kids) partes.push(`${g.kids} chico${g.kids > 1 ? 's' : ''}`);
+        if (g.under5) partes.push(`${g.under5} menor${g.under5 > 1 ? 'es' : ''} de 5`);
+
+        html += `
+          <div class="p-3 bg-zinc-950/80 border border-zinc-900 rounded-2xl space-y-2.5">
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h5 class="text-sm font-extrabold text-zinc-100 truncate">${escapeHtml(g.name)}</h5>
+                <p class="text-[10px] text-zinc-500">${g.total} pers.${partes.length ? ' · ' + partes.join(' · ') : ''}</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button onclick="editGuestCode('${g.id}')" title="Tocar para editar el código"
+                  class="px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white font-black font-mono text-sm tracking-[0.2em]">
+                  ${escapeHtml(g.code)}
+                </button>
+                <button onclick="showGuestQr('${g.id}')" title="Mostrar QR"
+                  class="p-2 rounded-lg bg-white text-black transition active:scale-95">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-5 0h3v3h-2v2h-1v-5zm3 3h2v2h3v3h-5v-2h-1v-2h1v-1zm2 5v1h-2v-1h2z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="toggleGuestStd('${g.id}')"
+                class="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wide transition ${g.saveTheDate ? 'bg-white/10 border-white/30 text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}">
+                ✉️ Save the date ${g.saveTheDate ? '✔' : '—'}
+              </button>
+              <button onclick="cycleGuestConfirm('${g.id}')"
+                class="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wide transition ${CONF_STYLES[g.confirmed] || CONF_STYLES.pendiente}">
+                ${CONF_LABELS[g.confirmed] || CONF_LABELS.pendiente}
+              </button>
+              <button onclick="editGuestNotes('${g.id}')"
+                class="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 text-[9px] font-bold uppercase tracking-wide transition">
+                📝 Nota
+              </button>
+              ${g.notes ? `<span class="text-[10px] text-amber-200/80 italic w-full">${escapeHtml(g.notes)}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById('guests-list').innerHTML = html ||
+        '<p class="p-8 text-center text-zinc-600 text-xs font-serif">No se encontraron invitados con esa búsqueda.</p>';
+    }
+
+    function editGuestCode(guestId) {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest) return;
+
+      const input = prompt(`Nuevo código para ${guest.name}:`, guest.code);
+      if (input === null) return;
+
+      const code = input.trim().toUpperCase();
+      if (code.length < 3) {
+        showToast("El código debe tener al menos 3 caracteres.", "warning");
+        return;
+      }
+      if (guests.some(g => g.id !== guestId && g.code === code) || PARTY_CODES.includes(code) || ADMIN_CODES.includes(code)) {
+        showToast("Ese código ya está en uso.", "warning");
+        return;
+      }
+      updateGuest(guestId, { code: code });
+    }
+
+    function editGuestNotes(guestId) {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest) return;
+      const input = prompt(`Nota para ${guest.name}:`, guest.notes || '');
+      if (input === null) return;
+      updateGuest(guestId, { notes: input.trim() });
+    }
+
+    function toggleGuestStd(guestId) {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest) return;
+      updateGuest(guestId, { saveTheDate: !guest.saveTheDate });
+    }
+
+    function cycleGuestConfirm(guestId) {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest) return;
+      const next = { pendiente: 'si', si: 'no', no: 'pendiente' };
+      updateGuest(guestId, { confirmed: next[guest.confirmed] || 'si' });
+    }
+
+    function showGuestQr(guestId) {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest) return;
+
+      document.getElementById('qr-guest-name').innerText = guest.name;
+      document.getElementById('qr-guest-code').innerText = guest.code;
+
+      const box = document.getElementById('qr-canvas');
+      box.innerHTML = '';
+      if (window.QRCode) {
+        // El QR abre CatApp con el código de la invitación ya cargado
+        new QRCode(box, {
+          text: `${window.location.origin}${window.location.pathname}?codigo=${encodeURIComponent(guest.code)}`,
+          width: 220,
+          height: 220,
+          colorDark: '#18181b',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } else {
+        box.innerHTML = '<p class="text-xs text-zinc-500">No se pudo cargar el generador de QR. Revisá la conexión a internet.</p>';
+      }
+      document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qr-modal').classList.add('hidden');
+    }
+
+    // ==========================================
     // CAMBIAR PESTAÑAS (TAB SYSTEM)
     // ==========================================
     function switchTab(tabId) {
@@ -1712,8 +2154,12 @@
             class="py-3 rounded-2xl bg-white text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
             🎧 Modo DJ
           </button>
+          <button onclick="openGuestsPanel()"
+            class="py-3 rounded-2xl bg-zinc-100 text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
+            👥 Invitados
+          </button>
           <button onclick="exportRankingToSpotify()"
-            class="py-3 rounded-2xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
+            class="col-span-2 py-3 rounded-2xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
             Exportar a Spotify
           </button>
         </div>

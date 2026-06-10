@@ -74,6 +74,11 @@ como secreto del servidor.
 
 ## Notas
 
+- **Lista de invitados**: no hay que hacer nada extra. La primera vez que un
+  admin abra la app (o el panel 👥 Invitados) con Supabase activo, la lista
+  del Excel se sube sola a la base compartida con sus códigos. Si preferís
+  cargarla a mano, también está en `supabase/invitados-seed.sql`.
+
 - La playlist arranca **vacía** (los temas de demostración desaparecen porque
   ahora la lista es la real de la fiesta). Cata puede inaugurarla agregando
   sus favoritas 🎶

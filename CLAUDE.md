@@ -50,13 +50,17 @@ Guiarlo paso a paso, en orden:
    nombre + email de la cuenta de Spotify de Cata, Seba y Mari (para
    que puedan usar CONECTAR SPOTIFY / exportar playlist).
 
-### 📋 Otros pendientes
+### ✅ Hecho: lista de invitados con códigos únicos y QR
 
-- **Lista de invitados con códigos únicos y QR**: cuando José suba la
-  lista (~200 invitados), generar un código único por invitado
-  (editable por Cata/admins, tabla `guests` ya creada en el esquema)
-  y un QR por invitado para mostrar en persona. Armar panel de admin
-  para ver/editar códigos y descargar los QR.
+- Importada del Excel (91 invitaciones, 175 personas, 8 grupos).
+- Cada invitación tiene código único de 4 caracteres y QR que abre la
+  app con el código precargado (`?codigo=XXXX`).
+- Panel 👥 Invitados (solo admins, botón en el Ranking): buscar, editar
+  códigos y notas, marcar save-the-date y confirmaciones (los cambios
+  de confirmación se llevan en la app, ya no en el Excel).
+- En modo local los cambios viven en cada teléfono; al activar Supabase
+  la lista se sube sola la primera vez que un admin abre la app y ahí
+  se comparte entre los 4 admins.
 
 ## Admins de CatApp (4)
 

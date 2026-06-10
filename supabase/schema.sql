@@ -39,11 +39,20 @@ create table if not exists public.votes (
 );
 
 -- Invitados con código único (editable por Cata y los admins).
--- Se carga cuando esté la lista definitiva; cada código tendrá su QR.
+-- Datos importados del Excel de la fiesta; cada código tiene su QR.
+-- confirmed: 'pendiente' | 'si' | 'no'
 create table if not exists public.guests (
   id uuid primary key default gen_random_uuid(),
+  group_name text,
   name text not null,
   code text not null unique,
+  adults int not null default 0,
+  kids int not null default 0,
+  under5 int not null default 0,
+  total int not null default 0,
+  save_the_date boolean not null default false,
+  confirmed text not null default 'pendiente',
+  notes text,
   created_at timestamptz not null default now()
 );
 
@@ -71,3 +80,4 @@ create policy "admins borran invitados"    on public.guests for delete using (tr
 -- Sincronización en vivo: los cambios se transmiten a todos los teléfonos
 alter publication supabase_realtime add table public.songs;
 alter publication supabase_realtime add table public.votes;
+alter publication supabase_realtime add table public.guests;
