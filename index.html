@@ -41,51 +41,61 @@
             darkbg: '#000000',
             glass: 'rgba(12, 12, 16, 0.76)',
             silverGlow: '#E2E8F0',
+            fiesta: '#ec4899',
+            fiestaDark: '#be185d',
+            fiestaViolet: '#8b5cf6',
           }
         }
       }
     }
   </script>
-  
+
   <style>
     body {
-      background-color: #ffffff;
+      /* Blanco con un suave amanecer rosa arriba: festivo pero limpio */
+      background: linear-gradient(180deg, #fdf2f8 0%, #fff9fc 220px, #ffffff 480px);
       font-family: 'Plus Jakarta Sans', sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Botones que se reconocen a simple vista en toda la app:
-       borde negro definido + sombra dura abajo a la derecha (efecto tecla).
-       Al tocarlos, la sombra se achica como si se hundieran.
-       Los elementos con la clase .sin-borde quedan exceptuados
-       (p. ej. las pestañas de la barra de navegación). */
+    /* Botones vivos: sin bordes duros, con una respuesta táctil suave */
     button {
-      border: 2px solid #18181b !important;
-      box-shadow: 3px 3px 0 #18181b !important;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
     }
     button:active {
-      box-shadow: 1px 1px 0 #18181b !important;
-    }
-    button:disabled {
-      box-shadow: none !important;
+      transform: scale(0.96);
     }
     .sin-borde {
       border: none !important;
       box-shadow: none !important;
     }
 
-    /* Tarjeta de acceso: blanca con borde bien definido */
+    /* Botón principal de la fiesta: degradado rosa → violeta */
+    .btn-fiesta {
+      background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+      color: #ffffff;
+      box-shadow: 0 8px 20px rgba(236, 72, 153, 0.35);
+    }
+
+    /* Tarjeta blanca con sombra suave rosada (reemplaza los bordes negros) */
+    .card-fiesta {
+      background: #ffffff;
+      border: 1px solid #fce7f3;
+      box-shadow: 0 4px 16px rgba(190, 24, 93, 0.07);
+    }
+
+    /* Tarjeta de acceso */
     .glass-panel {
       background: #ffffff;
-      border: 2px solid #18181b;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+      border: 1px solid #fbcfe8;
+      box-shadow: 0 18px 44px rgba(236, 72, 153, 0.14);
     }
 
     /* Luces de fondo estilo Bokeh */
     .bokeh-light {
       position: absolute;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0) 70%);
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.07) 0%, rgba(236, 72, 153, 0) 70%);
       pointer-events: none;
     }
 
@@ -97,7 +107,7 @@
       scrollbar-width: none;
     }
 
-    /* Animación sutil de los destellos plateados */
+    /* Animación sutil de los destellos */
     .star-sparkle {
       animation: pulseSparkle 4s infinite ease-in-out;
     }
@@ -131,82 +141,84 @@
   <!-- ==========================================
        PANTALLA DE ACCESO (LOGIN)
        ========================================== -->
-  <div id="login-screen" class="w-full max-w-md min-h-screen flex flex-col items-center px-6 py-8 z-10 bg-white relative">
-    
-    <!-- PARTE SUPERIOR: BOLA DE ESPEJOS -->
+  <div id="login-screen" class="w-full max-w-md min-h-screen flex flex-col items-center px-6 py-8 z-10 relative">
+
+    <!-- PARTE SUPERIOR: BOLA DE ESPEJOS (con destellos rosas) -->
     <div id="html-replica-ball" class="relative w-full flex flex-col items-center">
-      <div class="w-[1px] h-10 bg-gradient-to-b from-zinc-400/0 to-zinc-500"></div>
+      <div class="w-[1px] h-10 bg-gradient-to-b from-pink-300/0 to-pink-400"></div>
       <div class="relative w-48 h-28 -mt-2 flex items-center justify-center overflow-hidden">
-        <svg class="w-44 h-44 text-zinc-400 drop-shadow-[0_0_35px_rgba(255,255,255,0.22)]" viewBox="0 0 100 100">
+        <svg class="w-44 h-44 drop-shadow-[0_10px_25px_rgba(236,72,153,0.35)]" viewBox="0 0 100 100">
           <defs>
             <radialGradient id="esferaDisco" cx="50%" cy="40%" r="50%">
               <stop offset="0%" stop-color="#ffffff"/>
-              <stop offset="60%" stop-color="#94a3b8"/>
-              <stop offset="100%" stop-color="#09090b"/>
+              <stop offset="55%" stop-color="#f9a8d4"/>
+              <stop offset="100%" stop-color="#7e22ce"/>
             </radialGradient>
           </defs>
-          <circle cx="50" cy="50" r="45" fill="url(#esferaDisco)" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/>
-          <path d="M10,50 Q50,15 90,50 Q50,80 10,50 Z" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="0.5"/>
-          <path d="M15,40 Q50,5 85,40 Q50,75 15,40 Z" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
-          <path d="M15,60 Q50,25 85,60 Q50,95 15,60 Z" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
-          <path d="M50,5 L50,95 M35,7 Q45,50 35,93 M20,13 Q40,50 20,87 M65,7 Q55,50 65,93 M80,13 Q60,50 80,87" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+          <circle cx="50" cy="50" r="45" fill="url(#esferaDisco)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
+          <path d="M10,50 Q50,15 90,50 Q50,80 10,50 Z" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+          <path d="M15,40 Q50,5 85,40 Q50,75 15,40 Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.5"/>
+          <path d="M15,60 Q50,25 85,60 Q50,95 15,60 Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.5"/>
+          <path d="M50,5 L50,95 M35,7 Q45,50 35,93 M20,13 Q40,50 20,87 M65,7 Q55,50 65,93 M80,13 Q60,50 80,87" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="0.5"/>
         </svg>
       </div>
     </div>
 
     <!-- TEXTOS DEL SAVE THE DATE -->
     <div id="html-replica-header" class="text-center -mt-6 w-full relative z-10">
-      <span class="text-[11px] tracking-[0.45em] font-serif text-zinc-900 font-bold uppercase">MIS XV</span>
-      <h1 onclick="handleSecretTap()" class="text-7xl font-cursive text-black tracking-wide mt-1 mb-2 select-none cursor-default">Cata</h1>
-      <p class="text-lg font-serif tracking-[0.3em] text-zinc-900 font-semibold">11.09.26</p>
+      <span class="text-[12px] tracking-[0.45em] font-serif text-fiestaDark font-bold uppercase">MIS XV</span>
+      <h1 onclick="handleSecretTap()" class="text-7xl font-cursive text-zinc-900 tracking-wide mt-1 mb-2 select-none cursor-default">Cata</h1>
+      <p class="text-lg font-serif tracking-[0.3em] text-zinc-700 font-semibold">11.09.26</p>
+      <p class="mt-3 text-sm text-zinc-600 leading-relaxed px-4">
+        🎶 Elegí las canciones que <strong class="text-fiestaDark">no pueden faltar</strong> en la fiesta.<br>
+        El DJ arma la noche con los temas más votados.
+      </p>
     </div>
 
     <!-- CAJA DE ACCESO (justo debajo del texto, sin espacio vacío en el medio) -->
-    <div class="w-full glass-panel p-6 rounded-3xl relative z-10 mt-8">
-      <h2 class="text-[9px] tracking-[0.2em] text-zinc-700 uppercase font-extrabold mb-4 text-center">INGRESO AL SOUNDTRACK</h2>
-      
+    <div class="w-full glass-panel p-6 rounded-3xl relative z-10 mt-6">
       <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
         <div>
-          <label class="block text-[9px] tracking-[0.15em] text-zinc-600 uppercase font-bold mb-1">Código de Invitación</label>
+          <label class="block text-xs text-zinc-600 font-bold mb-1.5">Tu código de invitación</label>
           <div class="relative">
-            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-500">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-pink-400">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m-3.414-1.414A2 2 0 1111 5.586V13h2v2h2v2h2v3h2v-2h-3.586l-1-1M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </span>
-            <input 
-              type="text" 
+            <input
+              type="text"
               id="login-code"
-              placeholder="Ingresá tu código"
-              class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-3.5 pl-10 pr-4 text-xs text-black placeholder-zinc-400 outline-none transition-all duration-300 uppercase tracking-widest"
+              placeholder="Está en tu invitación"
+              class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-3.5 pl-10 pr-4 text-sm text-black placeholder-zinc-400 outline-none transition-all duration-300 uppercase tracking-widest"
               required
             />
           </div>
         </div>
 
         <div>
-          <label class="block text-[9px] tracking-[0.15em] text-zinc-600 uppercase font-bold mb-1">Tu Nombre o Apodo</label>
+          <label class="block text-xs text-zinc-600 font-bold mb-1.5">Tu nombre o apodo</label>
           <div class="relative">
-            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-500">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-pink-400">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </span>
-            <input 
-              type="text" 
+            <input
+              type="text"
               id="login-name"
-              placeholder="Ej. Santi" 
-              class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-3.5 pl-10 pr-4 text-xs text-black placeholder-zinc-400 outline-none transition-all duration-300"
+              placeholder="Ej. Santi"
+              class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-3.5 pl-10 pr-4 text-sm text-black placeholder-zinc-400 outline-none transition-all duration-300"
               required
             />
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          class="w-full bg-black text-white font-extrabold text-[10px] tracking-[0.25em] py-4 rounded-xl transition-all duration-300 shadow-md uppercase active:scale-[0.98]"
+        <button
+          type="submit"
+          class="w-full btn-fiesta font-extrabold text-sm py-4 rounded-full transition-all duration-300"
         >
-          Acceder a la Lista
+          Entrar a la fiesta 🎉
         </button>
       </form>
     </div>
@@ -218,8 +230,8 @@
     <div class="max-w-2xl mx-auto p-5 pb-16 space-y-4">
       <div class="flex justify-between items-center sticky top-0 bg-white/95 py-3 z-10">
         <div>
-          <h3 class="text-base font-extrabold text-black tracking-[0.2em] uppercase">👥 Invitados</h3>
-          <p id="guests-subtitle" class="text-[10px] text-zinc-500 uppercase tracking-wider">Códigos e invitaciones</p>
+          <h3 class="text-lg font-extrabold text-zinc-900">👥 Invitados</h3>
+          <p id="guests-subtitle" class="text-[11px] text-zinc-500">Códigos, confirmaciones e invitaciones</p>
         </div>
         <button onclick="closeGuestsPanel()" class="p-2.5 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-black transition">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -232,16 +244,16 @@
 
       <div class="grid grid-cols-3 gap-2">
         <button onclick="openGuestForm(null)"
-          class="py-2.5 rounded-xl bg-black text-white font-extrabold text-[9px] tracking-wider uppercase transition active:scale-95">
+          class="py-3 rounded-full btn-fiesta font-extrabold text-[11px] transition active:scale-95">
           ➕ Agregar
         </button>
         <button onclick="exportGuestsCsv()"
-          class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[9px] tracking-wider uppercase transition active:scale-95">
+          class="py-3 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[11px] transition active:scale-95">
           ⬇️ Excel
         </button>
         <button onclick="printGuestsReport()"
-          class="py-2.5 rounded-xl bg-zinc-900 text-white font-extrabold text-[9px] tracking-wider uppercase transition active:scale-95">
-          🖨️ Informe PDF
+          class="py-3 rounded-full bg-violet-100 text-violet-800 font-extrabold text-[11px] transition active:scale-95">
+          🖨️ PDF
         </button>
       </div>
 
@@ -256,7 +268,7 @@
           id="guests-search"
           oninput="renderGuestsPanel()"
           placeholder="Buscar invitado o código..."
-          class="w-full bg-zinc-50 border-2 border-zinc-400 focus:border-zinc-900 rounded-2xl py-3 pl-10 pr-4 text-xs text-black placeholder-zinc-400 outline-none"
+          class="w-full bg-zinc-50 border-2 border-pink-200 focus:border-fiesta rounded-2xl py-3 pl-10 pr-4 text-xs text-black placeholder-zinc-400 outline-none"
         />
       </div>
 
@@ -272,8 +284,8 @@
     <div class="max-w-2xl mx-auto p-5 pb-16 space-y-4">
       <div class="flex justify-between items-center sticky top-0 bg-white py-3 z-10">
         <div>
-          <h3 class="text-base font-extrabold text-black tracking-[0.2em] uppercase">🍽️ Mesas</h3>
-          <p class="text-[10px] text-zinc-500 uppercase tracking-wider">Distribución de invitados</p>
+          <h3 class="text-lg font-extrabold text-zinc-900">🍽️ Mesas</h3>
+          <p class="text-[11px] text-zinc-500">Distribución de invitados</p>
         </div>
         <button onclick="closeMesasPanel()" class="p-2.5 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-black transition">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -285,7 +297,7 @@
       <div id="mesas-stats" class="grid grid-cols-3 gap-2"></div>
 
       <button onclick="addMesa()"
-        class="w-full py-3 rounded-xl bg-black text-white font-extrabold text-[10px] tracking-wider uppercase transition active:scale-95">
+        class="w-full py-3.5 rounded-full btn-fiesta font-extrabold text-xs transition active:scale-95">
         ➕ Agregar mesa
       </button>
 
@@ -300,66 +312,66 @@
 
   <!-- MODAL: AGREGAR / EDITAR INVITADO -->
   <div id="guest-form-modal" class="fixed inset-0 z-[60] bg-white/90 backdrop-blur-xl flex items-center justify-center p-6 hidden">
-    <div class="w-full max-w-sm bg-zinc-100/95 border-2 border-zinc-900 p-6 rounded-3xl space-y-4 shadow-2xl">
+    <div class="w-full max-w-sm bg-white border border-pink-100 p-6 rounded-3xl space-y-4 shadow-2xl">
       <h3 id="guest-form-title" class="text-sm font-bold text-zinc-900">Agregar invitado</h3>
 
       <div class="space-y-3 text-left">
         <div>
           <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Nombre de la invitación</label>
           <input type="text" id="gf-name" placeholder="Ej. FAMILIA PÉREZ"
-            class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
+            class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
         </div>
         <div>
           <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Grupo</label>
           <input type="text" id="gf-group" list="group-options" placeholder="Ej. Colegio Cata"
-            class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
+            class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
           <datalist id="group-options"></datalist>
         </div>
         <div class="grid grid-cols-3 gap-2">
           <div>
             <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Adultos</label>
             <input type="number" id="gf-adults" min="0" value="0"
-              class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
+              class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
           </div>
           <div>
             <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Chicos</label>
             <input type="number" id="gf-kids" min="0" value="0"
-              class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
+              class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
           </div>
           <div>
             <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Men. de 5</label>
             <input type="number" id="gf-under5" min="0" value="0"
-              class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
+              class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
           </div>
         </div>
         <div>
           <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Notas</label>
           <input type="text" id="gf-notes" placeholder="Opcional"
-            class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
+            class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
         </div>
       </div>
 
       <div class="flex gap-2 pt-1">
-        <button onclick="closeGuestForm()" class="flex-1 bg-zinc-200 border border-zinc-300 text-zinc-700 font-bold text-xs py-3 rounded-xl transition">Cancelar</button>
-        <button onclick="saveGuestForm()" class="flex-1 bg-black text-white font-extrabold text-xs py-3 rounded-xl transition active:scale-95">Guardar</button>
+        <button onclick="closeGuestForm()" class="flex-1 bg-zinc-100 text-zinc-600 font-bold text-xs py-3 rounded-full transition">Cancelar</button>
+        <button onclick="saveGuestForm()" class="flex-1 btn-fiesta font-extrabold text-xs py-3 rounded-full transition active:scale-95">Guardar</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL: QR DE UNA INVITACIÓN -->
   <div id="qr-modal" class="fixed inset-0 z-[60] bg-white/95 backdrop-blur-xl flex items-center justify-center p-6 hidden" onclick="closeQrModal()">
-    <div class="w-full max-w-xs bg-white border-2 border-zinc-900 p-6 rounded-3xl text-center space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+    <div class="w-full max-w-xs bg-white border border-pink-100 p-6 rounded-3xl text-center space-y-4 shadow-2xl" onclick="event.stopPropagation()">
       <h3 id="qr-guest-name" class="text-base font-extrabold text-zinc-900"></h3>
       <div id="qr-canvas" class="flex justify-center"></div>
       <p class="text-2xl font-black font-mono tracking-[0.3em] text-zinc-900" id="qr-guest-code"></p>
       <p class="text-[11px] text-zinc-500 leading-relaxed">El invitado escanea el QR y entra a CatApp con su código ya cargado.</p>
-      <button onclick="closeQrModal()" class="w-full bg-zinc-900 text-white font-bold text-xs py-3 rounded-xl transition active:scale-95">Cerrar</button>
+      <button onclick="closeQrModal()" class="w-full btn-fiesta font-bold text-xs py-3 rounded-full transition active:scale-95">Cerrar</button>
     </div>
   </div>
 
   <!-- MODAL: ACCESO DE ADMINISTRADORES (5 toques sobre "Cata" en el login) -->
   <div id="admin-login-modal" class="fixed inset-0 z-50 bg-white/90 backdrop-blur-xl flex items-center justify-center p-6 hidden">
-    <div class="w-full max-w-sm bg-zinc-100/95 border-2 border-zinc-900 p-6 rounded-3xl space-y-5 shadow-2xl text-center relative">
+    <div class="w-full max-w-sm bg-white border border-pink-100 p-6 rounded-3xl space-y-5 shadow-2xl text-center relative">
       <button onclick="closeAdminLogin()" class="absolute top-4 right-4 p-2 rounded-xl bg-zinc-200 text-zinc-600 hover:text-black transition">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -387,27 +399,28 @@
     </div>
 
     <!-- HEADER -->
-    <header class="sticky top-0 z-30 py-4 bg-white/95 backdrop-blur-md border-b-2 border-zinc-900 mb-6 flex justify-between items-center">
+    <header class="sticky top-0 z-30 py-3.5 bg-white/90 backdrop-blur-md border-b border-pink-100 mb-6 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
-        <svg class="w-8 h-8 text-black/80" viewBox="0 0 100 100" fill="none">
-          <circle cx="50" cy="50" r="45" fill="rgba(0,0,0,0.04)" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
-          <path d="M10,50 Q50,20 90,50 Q50,80 10,50 Z" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
-          <path d="M50,5 L50,95" stroke="rgba(0,0,0,0.1)"/>
-        </svg>
+        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-400 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-pink-200">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9 19V6l12-3v13c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3c.35 0 .69.06 1 .17V7.41L11 9.03V19c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3c.35 0 .69.06 1 .17z"/>
+          </svg>
+        </div>
         <div>
-          <h2 class="text-xs font-serif uppercase tracking-[0.25em] text-black">CATA <span class="font-cursive text-sm tracking-normal font-normal">xv</span></h2>
-          <p class="text-[8px] text-zinc-500 tracking-[0.15em] font-semibold uppercase">11 de Septiembre, 2026</p>
+          <h2 class="text-base text-zinc-900"><span class="font-cursive text-xl">Cata</span> <span class="font-serif text-xs tracking-[0.2em] text-fiestaDark font-bold">XV</span></h2>
+          <p class="text-[9px] text-zinc-500 font-semibold">11 de septiembre, 2026</p>
         </div>
       </div>
 
       <div class="flex items-center gap-3">
         <div class="text-right">
           <p id="user-display-name" class="text-xs font-bold text-zinc-800">-</p>
-          <p id="user-display-code" class="text-[8px] text-zinc-500 font-mono tracking-widest uppercase">-</p>
+          <p id="user-display-code" class="text-[8px] text-zinc-400 font-mono tracking-widest uppercase">-</p>
         </div>
-        <button 
-          onclick="logout()" 
-          class="p-2.5 rounded-xl bg-zinc-50 border-2 border-zinc-900 text-zinc-500 hover:text-black transition active:scale-95"
+        <button
+          onclick="logout()"
+          title="Salir"
+          class="p-2.5 rounded-full bg-pink-50 text-pink-400 hover:text-fiestaDark transition active:scale-95"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -427,11 +440,11 @@
 
       <div class="space-y-4">
         <div class="flex justify-between items-center px-1">
-          <h3 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-zinc-600 animate-pulse"></span>
-            RANKING DE VOTOS
+          <h3 class="text-sm text-zinc-800 font-extrabold flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-fiesta animate-pulse"></span>
+            Ranking de votos
           </h3>
-          <span id="songs-count" class="text-[9px] text-zinc-600 bg-zinc-50/80 border-2 border-zinc-900 px-2.5 py-0.5 rounded-full font-mono font-bold">
+          <span id="songs-count" class="text-[10px] text-fiestaDark bg-pink-50 px-3 py-1 rounded-full font-bold">
             0 Temas
           </span>
         </div>
@@ -443,10 +456,16 @@
     </div>
 
     <!-- VISTA 2: AÑADIR & CONECTAR CON SPOTIFY REAL -->
-    <div id="tab-search" class="tab-content space-y-6 hidden">
-      
+    <div id="tab-search" class="tab-content space-y-5 hidden">
+
+      <!-- Qué hacer acá, dicho en una línea -->
+      <div class="text-center px-2 pt-1">
+        <h3 class="text-lg font-extrabold text-zinc-900">¿Qué canciones no pueden faltar? 🎶</h3>
+        <p class="text-xs text-zinc-500 mt-1">Buscá tus temas favoritos y votalos. Los más votados los pasa el DJ.</p>
+      </div>
+
       <!-- Panel de Conexión de API Spotify -->
-      <div id="spotify-api-status-banner" class="p-4 rounded-2xl bg-zinc-50 border-2 border-zinc-900 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div id="spotify-api-status-banner" class="p-4 rounded-2xl bg-zinc-50 border border-pink-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-full bg-[#1DB954]/10 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-[#1DB954]" fill="currentColor" viewBox="0 0 24 24">
@@ -478,17 +497,17 @@
       <!-- Buscador Manual -->
       <div id="spotify-search-panel" class="space-y-4">
         <div class="relative">
-          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-500">
+          <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-pink-400">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </span>
-          <input 
-            type="text" 
+          <input
+            type="text"
             id="spotify-input"
             oninput="searchSpotify()"
-            placeholder="Escribe el nombre de la canción o artista..." 
-            class="w-full bg-zinc-50 border-2 border-zinc-400 focus:border-zinc-900 rounded-2xl py-3.5 pl-11 pr-4 text-xs text-black placeholder-zinc-300 outline-none transition-all duration-300"
+            placeholder="Buscá una canción o artista…"
+            class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-full py-4 pl-12 pr-4 text-sm text-black placeholder-zinc-400 outline-none transition-all duration-300 shadow-sm"
           />
         </div>
 
@@ -499,15 +518,15 @@
         <!-- Ranking personal: las más escuchadas de la cuenta de Spotify conectada -->
         <div id="top-tracks-section" class="space-y-3 hidden">
           <div>
-            <h3 class="text-xs tracking-wider text-zinc-500 uppercase font-extrabold flex items-center gap-1.5">
+            <h3 class="text-sm text-zinc-800 font-extrabold flex items-center gap-1.5">
               🏆 Tus más escuchadas
-              <span id="top-tracks-count" class="text-zinc-400 font-mono normal-case tracking-normal"></span>
+              <span id="top-tracks-count" class="text-zinc-400 font-mono text-xs"></span>
             </h3>
-            <p class="text-[10px] text-zinc-400 mt-1 leading-relaxed">
-              Tu ranking personal de Spotify. Tocá el botón de la derecha para pedirlas en la fiesta.
+            <p class="text-xs text-zinc-500 mt-1 leading-relaxed">
+              Tu ranking personal de Spotify. Tocá el corazón para pedirlas en la fiesta.
             </p>
           </div>
-          <div class="p-1 bg-zinc-50 rounded-2xl border-2 border-zinc-900 flex">
+          <div class="p-1 bg-pink-50 rounded-full flex">
             <button id="btn-top-range-short_term" onclick="setTopTracksRange('short_term')"
               class="flex-1 text-center py-1.5 text-[10px] font-bold tracking-wide rounded-xl transition text-zinc-500">
               Último mes
@@ -531,26 +550,26 @@
 
     <!-- VISTA 3: MI ESPACIO & SUGERENCIAS -->
     <div id="tab-profile" class="tab-content space-y-6 hidden">
-      <!-- Tarjeta de Perfil Platino -->
-      <div class="bg-zinc-100/15 border-2 border-zinc-900 rounded-3xl p-5 flex items-center justify-between gap-4">
+      <!-- Tarjeta de Perfil -->
+      <div class="card-fiesta rounded-3xl p-5 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-          <div id="profile-avatar" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-zinc-300 via-zinc-900 to-zinc-500 flex items-center justify-center font-extrabold text-white text-sm">
+          <div id="profile-avatar" class="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-violet-500 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-pink-200">
             -
           </div>
           <div>
-            <h3 id="profile-name" class="text-sm font-bold text-zinc-800">-</h3>
-            <p class="text-[10px] text-zinc-500">Invitación: <span id="profile-code" class="font-mono text-zinc-600 tracking-wide uppercase">-</span></p>
+            <h3 id="profile-name" class="text-base font-bold text-zinc-800">-</h3>
+            <p class="text-[10px] text-zinc-500">Invitación: <span id="profile-code" class="font-mono text-fiestaDark tracking-wide uppercase">-</span></p>
           </div>
         </div>
         <div class="text-right">
-          <span id="profile-contributions" class="text-2xl font-black text-zinc-700 font-mono block leading-none">0</span>
-          <span class="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">Mis Votos</span>
+          <span id="profile-contributions" class="text-2xl font-black text-fiestaDark font-mono block leading-none">0</span>
+          <span class="text-[9px] text-zinc-500 font-bold">Mis votos</span>
         </div>
       </div>
 
       <!-- Mis Votos -->
       <div class="space-y-3">
-        <h3 class="text-xs tracking-wider text-zinc-500 uppercase font-extrabold">Mis Votos</h3>
+        <h3 class="text-sm text-zinc-800 font-extrabold">💖 Mis votos</h3>
         <div id="my-votes-container" class="space-y-2">
           <!-- Canciones que voté -->
         </div>
@@ -558,7 +577,7 @@
 
       <!-- Mis Peticiones -->
       <div class="space-y-3">
-        <h3 class="text-xs tracking-wider text-zinc-500 uppercase font-extrabold">Mi Historial de Pedidos</h3>
+        <h3 class="text-sm text-zinc-800 font-extrabold">🎤 Canciones que pedí yo</h3>
         <div id="my-songs-container" class="space-y-2">
           <!-- Listado de temas solicitados por mí -->
         </div>
@@ -567,7 +586,7 @@
 
     <!-- MODAL: DEDICATORIA OPCIONAL AL VOTAR -->
     <div id="dedication-modal" class="fixed inset-0 z-50 bg-white/90 backdrop-blur-xl flex items-center justify-center p-6 hidden">
-      <div class="w-full max-w-sm bg-zinc-100/95 border-2 border-zinc-900 p-6 rounded-3xl space-y-4 shadow-2xl">
+      <div class="w-full max-w-sm bg-white border border-pink-100 p-6 rounded-3xl space-y-4 shadow-2xl">
         <h3 class="text-sm font-bold text-zinc-900">💌 ¿Querés dedicarla?</h3>
         <p id="dedication-song-title" class="text-[11px] text-zinc-600"></p>
         <textarea
@@ -575,11 +594,11 @@
           rows="3"
           maxlength="200"
           placeholder="Escribí un mensajito para Cata (opcional)..."
-          class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl p-3 text-xs text-black placeholder-zinc-600 outline-none resize-none"
+          class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl p-3 text-xs text-black placeholder-zinc-600 outline-none resize-none"
         ></textarea>
         <div class="flex gap-2">
-          <button onclick="closeDedicationModal()" class="flex-1 bg-zinc-200 border border-zinc-300 text-zinc-700 font-bold text-xs py-3 rounded-xl transition">Ahora no</button>
-          <button onclick="submitDedication()" class="flex-1 bg-black text-white font-extrabold text-xs py-3 rounded-xl transition active:scale-95">Enviar 💌</button>
+          <button onclick="closeDedicationModal()" class="flex-1 bg-zinc-100 text-zinc-600 font-bold text-xs py-3 rounded-full transition">Ahora no</button>
+          <button onclick="submitDedication()" class="flex-1 btn-fiesta font-extrabold text-xs py-3 rounded-full transition active:scale-95">Enviar 💌</button>
         </div>
       </div>
     </div>
@@ -589,8 +608,8 @@
       <div class="max-w-2xl mx-auto p-5 pb-16 space-y-5">
         <div class="flex justify-between items-center sticky top-0 bg-white/95 py-3 z-10">
           <div>
-            <h3 class="text-base font-extrabold text-black tracking-[0.2em] uppercase">🎧 Modo DJ</h3>
-            <p class="text-[10px] text-zinc-500 uppercase tracking-wider">XV de Cata — Ranking en vivo</p>
+            <h3 class="text-lg font-extrabold text-zinc-900">🎧 Modo DJ</h3>
+            <p class="text-[11px] text-zinc-500">XV de Cata — Ranking en vivo</p>
           </div>
           <button onclick="closeDjMode()" class="p-2.5 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-black transition">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -617,38 +636,38 @@
     </div>
 
     <!-- NAV BAR FLOTANTE INFERIOR -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md bg-white border-2 border-zinc-900 backdrop-blur-2xl px-6 py-2.5 rounded-full shadow-2xl flex justify-around items-center">
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md bg-white/95 backdrop-blur-2xl px-3 py-2 rounded-full shadow-[0_10px_35px_rgba(190,24,93,0.18)] border border-pink-100 flex justify-around items-center gap-1">
       <button
         id="nav-soundtrack"
         onclick="switchTab('soundtrack')"
-        class="sin-borde flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 text-black scale-105"
+        class="sin-borde flex-1 flex flex-col items-center gap-0.5 py-2 rounded-full transition-all duration-300 btn-fiesta"
       >
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        <span class="text-[9px] font-bold tracking-wide">Ranking</span>
+        <span class="text-[10px] font-bold">Ranking</span>
       </button>
 
       <button
         id="nav-search"
         onclick="switchTab('search')"
-        class="sin-borde flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 text-zinc-500 hover:text-zinc-700"
+        class="sin-borde flex-1 flex flex-col items-center gap-0.5 py-2 rounded-full transition-all duration-300 text-zinc-400"
       >
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <span class="text-[9px] font-bold tracking-wide">Añadir</span>
+        <span class="text-[10px] font-bold">Votar</span>
       </button>
 
-      <button 
+      <button
         id="nav-profile"
         onclick="switchTab('profile')"
-        class="sin-borde flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 text-zinc-500 hover:text-zinc-700"
+        class="sin-borde flex-1 flex flex-col items-center gap-0.5 py-2 rounded-full transition-all duration-300 text-zinc-400"
       >
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
-        <span class="text-[9px] font-bold tracking-wide">Mi Espacio</span>
+        <span class="text-[10px] font-bold">Mi Espacio</span>
       </button>
     </nav>
 
@@ -905,15 +924,15 @@
       toast.className = `px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 border-2 backdrop-blur-lg transform transition-all duration-300 translate-y-2 opacity-0 z-50`;
 
       const themeClasses = {
-        success: 'bg-white/95 border-zinc-900 text-zinc-800',
-        error: 'bg-white/95 border-red-600 text-red-700',
-        warning: 'bg-white/95 border-amber-600 text-amber-700',
-        info: 'bg-white/95 border-zinc-900 text-zinc-700'
+        success: 'bg-white/95 border-pink-300 text-fiestaDark',
+        error: 'bg-white/95 border-red-400 text-red-700',
+        warning: 'bg-white/95 border-amber-400 text-amber-700',
+        info: 'bg-white/95 border-pink-200 text-zinc-700'
       };
 
       toast.className += ' ' + themeClasses[type];
       toast.innerHTML = `
-        <span class="w-1.5 h-1.5 rounded-full bg-black animate-pulse shrink-0"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-fiesta animate-pulse shrink-0"></span>
         <p class="text-xs font-semibold leading-normal flex-1">${escapeHtml(message)}</p>
       `;
 
@@ -1540,8 +1559,8 @@
         const btn = document.getElementById(`btn-top-range-${r}`);
         if (btn) {
           btn.className = r === topTracksRange
-            ? "flex-1 text-center py-1.5 text-[10px] font-bold tracking-wide rounded-xl transition bg-zinc-100 text-black"
-            : "flex-1 text-center py-1.5 text-[10px] font-bold tracking-wide rounded-xl transition text-zinc-500";
+            ? "sin-borde flex-1 text-center py-2 text-[11px] font-bold rounded-full transition bg-white text-fiestaDark shadow-sm"
+            : "sin-borde flex-1 text-center py-2 text-[11px] font-bold rounded-full transition text-zinc-500";
         }
       });
 
@@ -1592,7 +1611,7 @@
 
       if (tracks.length === 0) {
         list.innerHTML = `
-          <div class="p-6 text-center bg-zinc-100/10 rounded-2xl border-2 border-zinc-400 border-dashed">
+          <div class="p-6 text-center bg-zinc-100/10 rounded-2xl border-2 border-pink-200 border-dashed">
             <p class="text-xs text-zinc-500 font-serif">Spotify todavía no armó un ranking para este período en tu cuenta.</p>
           </div>`;
         return;
@@ -1608,26 +1627,25 @@
         const votedByMe = !!(existing && existing.voters && existing.voters.includes(currentUser.id));
 
         const icon = votedByMe
-          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />'
-          : (existing
-            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />'
-            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />');
+          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />'
+          : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />';
 
         return `
-          <div class="flex items-center justify-between gap-3 p-2.5 bg-white hover:bg-zinc-100/30 border-2 border-zinc-900 rounded-2xl transition animate-fadeIn">
+          <div class="card-fiesta flex items-center justify-between gap-3 p-3 rounded-2xl transition animate-fadeIn">
             <div class="flex items-center gap-2.5 min-w-0">
-              <span class="w-6 text-center text-[10px] font-black text-zinc-400 font-mono shrink-0">${index + 1}</span>
-              <div class="relative w-10 h-10 rounded-xl overflow-hidden bg-zinc-100 flex-none">
+              <span class="w-6 text-center text-xs font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
+              <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-zinc-100 flex-none">
                 <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
-                <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="absolute inset-0 bg-black/35 flex items-center justify-center text-white">
-                  <svg class="w-4 h-4 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+                  <svg class="w-5 h-5 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
                 </button>
               </div>
               <div class="min-w-0">
-                <h4 class="text-xs font-bold text-zinc-800 truncate">${escapeHtml(track.title)}</h4>
-                <p class="text-[10px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+                <h4 class="text-sm font-bold text-zinc-800 truncate">${escapeHtml(track.title)}</h4>
+                <p class="text-xs text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+                ${votedByMe ? '<p class="text-[10px] text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
               </div>
             </div>
 
@@ -1635,10 +1653,9 @@
               onclick="addSongFromTop(${index})"
               ${votedByMe ? 'disabled' : ''}
               title="${votedByMe ? 'Ya la votaste' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
-              class="p-2 rounded-xl transition shrink-0"
-              style="background-color: ${votedByMe ? 'rgba(228, 228, 231, 0.6)' : '#18181b'}; color: ${votedByMe ? '#a1a1aa' : '#ffffff'}; cursor: ${votedByMe ? 'not-allowed' : 'pointer'}"
+              class="w-11 h-11 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
             >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-5 h-5 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 ${icon}
               </svg>
             </button>
@@ -2083,7 +2100,7 @@
         [stdPersonas, 'Save the Date'],
         [confPersonas, 'Confirmadas']
       ].map(([n, label]) => `
-        <div class="bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl p-2.5 text-center">
+        <div class="card-fiesta rounded-2xl p-2.5 text-center">
           <span class="text-lg font-black text-black font-mono block">${n}</span>
           <span class="text-[7px] text-zinc-500 uppercase font-bold tracking-wider">${label}</span>
         </div>
@@ -2095,7 +2112,7 @@
         const grupos = guestGroupList();
         let chips = `
           <button onclick="setGuestGroupFilter('')"
-            class="px-3 py-1.5 rounded-full border-2 text-[10px] font-extrabold uppercase tracking-wide transition ${guestGroupFilter === '' ? 'bg-black border-black text-white' : 'bg-white border-zinc-300 text-zinc-600'}">
+            class="px-3 py-1.5 rounded-full border text-[10px] font-extrabold uppercase tracking-wide transition ${guestGroupFilter === '' ? 'btn-fiesta border-transparent' : 'bg-white border-zinc-200 text-zinc-600'}">
             Todos (${guests.length})
           </button>`;
         grupos.forEach(gr => {
@@ -2103,7 +2120,7 @@
           const active = guestGroupFilter === gr;
           chips += `
             <button onclick="setGuestGroupFilter('${gr.replace(/'/g, "\\'")}')"
-              class="px-3 py-1.5 rounded-full border-2 text-[10px] font-extrabold uppercase tracking-wide transition ${active ? 'bg-black border-black text-white' : groupTagClass(gr)}">
+              class="px-3 py-1.5 rounded-full border text-[10px] font-extrabold uppercase tracking-wide transition ${active ? 'btn-fiesta border-transparent' : groupTagClass(gr)}">
               ${escapeHtml(gr)} (${count})
             </button>`;
         });
@@ -2142,7 +2159,7 @@
         const tipo = guestTipoTag(g);
 
         html += `
-          <div class="p-3 bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl space-y-2.5">
+          <div class="p-3 card-fiesta rounded-2xl space-y-2.5">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="px-2 py-0.5 rounded-full border text-[8px] font-extrabold uppercase tracking-wide ${groupTagClass(g.grupo)}">${escapeHtml(g.grupo || 'Otros')}</span>
               <span class="px-2 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-wide ${tipo.cls}">${tipo.label}</span>
@@ -2154,11 +2171,11 @@
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <button onclick="editGuestCode('${g.id}')" title="Tocar para editar el código"
-                  class="px-2.5 py-1.5 rounded-lg bg-black/10 border border-black/20 text-black font-black font-mono text-sm tracking-[0.2em]">
+                  class="px-2.5 py-1.5 rounded-lg bg-pink-50 text-fiestaDark font-black font-mono text-sm tracking-[0.2em]">
                   ${escapeHtml(g.code)}
                 </button>
                 <button onclick="showGuestQr('${g.id}')" title="Mostrar QR"
-                  class="p-2 rounded-lg bg-black text-white transition active:scale-95">
+                  class="p-2 rounded-lg btn-fiesta transition active:scale-95">
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-5 0h3v3h-2v2h-1v-5zm3 3h2v2h3v3h-5v-2h-1v-2h1v-1zm2 5v1h-2v-1h2z"/>
                   </svg>
@@ -2167,7 +2184,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <button onclick="toggleGuestStd('${g.id}')"
-                class="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wide transition ${g.saveTheDate ? 'bg-black/10 border-black/30 text-black' : 'bg-zinc-100 border-zinc-200 text-zinc-500'}">
+                class="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wide transition ${g.saveTheDate ? 'bg-pink-50 border-pink-200 text-fiestaDark' : 'bg-zinc-100 border-zinc-200 text-zinc-500'}">
                 ✉️ Save the date ${g.saveTheDate ? '✔' : '—'}
               </button>
               <button onclick="cycleGuestConfirm('${g.id}')"
@@ -2627,7 +2644,7 @@
         [sentadas, 'Sentados'],
         [totalPersonas - sentadas, 'Sin mesa']
       ].map(([n, label]) => `
-        <div class="bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl p-2.5 text-center">
+        <div class="card-fiesta rounded-2xl p-2.5 text-center">
           <span class="text-lg font-black text-black font-mono block">${n}</span>
           <span class="text-[7px] text-zinc-500 uppercase font-bold tracking-wider">${label}</span>
         </div>
@@ -2650,7 +2667,7 @@
             const g = guestById(id);
             if (!g) return '';
             return `
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border-2 border-zinc-900 text-[10px] font-bold text-zinc-800">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-pink-100 text-[10px] font-bold text-zinc-800">
                 ${escapeHtml(g.name)} <span class="text-zinc-400 font-mono">${g.total}</span>
                 <button onclick="removeGuestFromMesa('${mesa.id}','${g.id}')" title="Quitar de la mesa"
                   class="sin-borde -mr-1 w-4 h-4 flex items-center justify-center rounded-full bg-zinc-200 text-zinc-600 hover:text-red-500 text-[10px] leading-none">×</button>
@@ -2658,7 +2675,7 @@
           }).join('');
 
           return `
-            <div class="p-3 bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl space-y-2.5">
+            <div class="p-3 card-fiesta rounded-2xl space-y-2.5">
               <div class="flex items-center justify-between gap-2">
                 <button onclick="renameMesa('${mesa.id}')" title="Cambiar el nombre"
                   class="sin-borde text-left min-w-0 flex-1">
@@ -2677,7 +2694,7 @@
               </div>
 
               <select onchange="assignGuestToMesa('${mesa.id}', this.value); this.value='';"
-                class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-2 px-3 text-xs text-black outline-none">
+                class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2 px-3 text-xs text-black outline-none">
                 <option value="">➕ Sentar invitado…</option>
                 ${optionsLibres}
               </select>
@@ -2717,9 +2734,10 @@
 
       Object.keys(navButtons).forEach(key => {
         if (key === tabId) {
-          navButtons[key].className = "sin-borde flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 text-black scale-105";
+          // Pestaña activa: píldora con el degradado de la fiesta
+          navButtons[key].className = "sin-borde flex-1 flex flex-col items-center gap-0.5 py-2 rounded-full transition-all duration-300 btn-fiesta";
         } else {
-          navButtons[key].className = "sin-borde flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 text-zinc-500 hover:text-zinc-700";
+          navButtons[key].className = "sin-borde flex-1 flex flex-col items-center gap-0.5 py-2 rounded-full transition-all duration-300 text-zinc-400";
         }
       });
 
@@ -2777,45 +2795,45 @@
       statsBox.innerHTML = `
         <div class="grid grid-cols-2 gap-2">
           <button onclick="openDjMode()"
-            class="py-3 rounded-2xl bg-black text-white font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
+            class="py-3.5 rounded-2xl bg-zinc-900 text-white font-extrabold text-xs transition active:scale-95 shadow-lg">
             🎧 Modo DJ
           </button>
           <button onclick="openGuestsPanel()"
-            class="py-3 rounded-2xl bg-zinc-900 text-white font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
+            class="py-3.5 rounded-2xl btn-fiesta font-extrabold text-xs transition active:scale-95">
             👥 Invitados
           </button>
           <button onclick="openMesasPanel()"
-            class="col-span-2 py-3 rounded-2xl bg-white text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95">
+            class="py-3.5 rounded-2xl bg-violet-100 text-violet-800 font-extrabold text-xs transition active:scale-95">
             🍽️ Mesas
           </button>
           <button onclick="exportRankingToSpotify()"
-            class="col-span-2 py-3 rounded-2xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
-            Exportar a Spotify
+            class="py-3.5 rounded-2xl bg-[#1DB954] hover:bg-[#1ed760] text-white font-extrabold text-xs transition active:scale-95 shadow-lg">
+            ⬆ Exportar a Spotify
           </button>
           <button onclick="toggleGuestView()"
-            class="col-span-2 py-3 rounded-2xl bg-white text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95">
-            👁 Ver la app como invitado
+            class="col-span-2 py-3 rounded-2xl bg-pink-50 text-fiestaDark font-bold text-xs transition active:scale-95">
+            👁 Ver la app como la ve un invitado
           </button>
         </div>
 
         <div class="grid grid-cols-3 gap-2">
-          <div class="bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl p-3 text-center">
-            <span class="text-xl font-black text-black font-mono block">${songs.length}</span>
-            <span class="text-[8px] text-zinc-500 uppercase font-bold tracking-wider">Temas</span>
+          <div class="card-fiesta rounded-2xl p-3 text-center">
+            <span class="text-xl font-black text-fiestaDark font-mono block">${songs.length}</span>
+            <span class="text-[9px] text-zinc-500 font-bold">Temas</span>
           </div>
-          <div class="bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl p-3 text-center">
-            <span class="text-xl font-black text-black font-mono block">${totalVotes}</span>
-            <span class="text-[8px] text-zinc-500 uppercase font-bold tracking-wider">Votos</span>
+          <div class="card-fiesta rounded-2xl p-3 text-center">
+            <span class="text-xl font-black text-fiestaDark font-mono block">${totalVotes}</span>
+            <span class="text-[9px] text-zinc-500 font-bold">Votos</span>
           </div>
-          <div class="bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl p-3 text-center">
-            <span class="text-xl font-black text-black font-mono block">${guests.length}</span>
-            <span class="text-[8px] text-zinc-500 uppercase font-bold tracking-wider">Votantes</span>
+          <div class="card-fiesta rounded-2xl p-3 text-center">
+            <span class="text-xl font-black text-fiestaDark font-mono block">${guests.length}</span>
+            <span class="text-[9px] text-zinc-500 font-bold">Votantes</span>
           </div>
         </div>
 
-        <details class="bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl overflow-hidden">
-          <summary class="px-4 py-3 text-[10px] tracking-[0.2em] text-zinc-600 uppercase font-extrabold cursor-pointer select-none">
-            Votos por invitado (${guests.length})
+        <details class="card-fiesta rounded-2xl overflow-hidden">
+          <summary class="px-4 py-3 text-xs text-zinc-700 font-extrabold cursor-pointer select-none">
+            🗳 Votos por invitado (${guests.length})
           </summary>
           <div class="px-4 pb-3 space-y-2 max-h-56 overflow-y-auto no-scrollbar">
             ${guests.length === 0 ? '<p class="text-xs text-zinc-400 font-serif">Todavía no hay votos.</p>' : guests.map(g => `
@@ -2827,8 +2845,8 @@
           </div>
         </details>
 
-        <details class="bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl overflow-hidden">
-          <summary class="px-4 py-3 text-[10px] tracking-[0.2em] text-zinc-600 uppercase font-extrabold cursor-pointer select-none">
+        <details class="card-fiesta rounded-2xl overflow-hidden">
+          <summary class="px-4 py-3 text-xs text-zinc-700 font-extrabold cursor-pointer select-none">
             💌 Dedicatorias (${dedications.length})
           </summary>
           <div class="px-4 pb-3 space-y-2 max-h-56 overflow-y-auto no-scrollbar">
@@ -2854,37 +2872,32 @@
         const top = sorted[0];
         const isPlaying = playingTrackId === top.id;
         topBanner.innerHTML = `
-          <div class="bg-zinc-50/95 backdrop-blur-3xl p-5 rounded-[23px] flex items-center justify-between gap-4 border-2 border-zinc-900">
+          <div class="p-5 rounded-[23px] flex items-center justify-between gap-4 text-white"
+               style="background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%); box-shadow: 0 12px 30px rgba(236,72,153,0.35);">
             <div class="flex items-center gap-4 min-w-0">
-              <div class="relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 bg-zinc-100 shadow-md">
+              <button onclick="toggleTrackPlayback('${top.id}')" title="Escuchar"
+                class="sin-borde relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-white/20 shadow-lg">
                 <img src="${top.coverUrl}" alt="Cover" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
-                <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <button onclick="toggleTrackPlayback('${top.id}')" class="p-1.5 rounded-full bg-white/25 text-white">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      ${isPlaying ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9z" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />'}
-                    </svg>
-                  </button>
-                </div>
-              </div>
+                <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+                  <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                    ${isPlaying ? '<path d="M6 6h4v12H6zM14 6h4v12h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}
+                  </svg>
+                </span>
+              </button>
               <div class="min-w-0">
-                <div class="flex items-center gap-1.5 mb-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-black animate-ping"></span>
-                  <span class="text-[9px] tracking-[0.2em] text-black/80 font-bold uppercase">LA MÁS VOTADA</span>
-                </div>
-                <h3 class="text-xs font-bold text-zinc-900 truncate pr-2">${escapeHtml(top.title)}</h3>
-                <p class="text-[10px] text-zinc-500 truncate">${escapeHtml(top.artist)}</p>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/90">👑 La más votada</span>
+                <h3 class="text-base font-extrabold truncate pr-2 mt-0.5">${escapeHtml(top.title)}</h3>
+                <p class="text-xs text-white/80 truncate">${escapeHtml(top.artist)}</p>
               </div>
             </div>
             <div class="text-right shrink-0">
-              <span class="text-[9px] font-mono text-zinc-500 font-bold uppercase block">Votos</span>
-              <span class="text-xl font-black text-black">
-                ${top.votes} ★
-              </span>
+              <span class="text-2xl font-black block leading-none">${top.votes}</span>
+              <span class="text-[10px] font-bold text-white/80">votos 💖</span>
             </div>
           </div>
         `;
       } else {
-        topBanner.innerHTML = `<p class="p-4 text-center text-zinc-400 text-xs font-serif">Agrega música para coronar el hit de la noche</p>`;
+        topBanner.innerHTML = `<p class="p-4 text-center text-zinc-400 text-xs">Agregá música para coronar el hit de la noche 👑</p>`;
       }
 
       const listContainer = document.getElementById('songs-list-container');
@@ -2893,7 +2906,7 @@
       if (sorted.length === 0) {
         listContainer.innerHTML = `
           <div class="text-center py-12 text-zinc-400">
-            <p class="text-xs font-serif">La lista está vacía en este momento.</p>
+            <p class="text-sm">Todavía no hay temas pedidos.<br>En cuanto los invitados voten, acá aparece el ranking. 🎶</p>
           </div>
         `;
         return;
@@ -2904,49 +2917,46 @@
         const isPlaying = playingTrackId === song.id;
 
         listContainer.innerHTML += `
-          <div class="flex items-center justify-between gap-3 p-3 bg-zinc-50/40 hover:bg-zinc-100/10 border-2 border-zinc-900 rounded-2xl transition flex-nowrap animate-fadeIn">
+          <div class="card-fiesta flex items-center justify-between gap-3 p-3 rounded-2xl transition flex-nowrap animate-fadeIn">
             <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-zinc-100 flex-none">
+              <span class="w-6 text-center text-sm font-black ${idx < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${idx + 1}</span>
+              <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar"
+                class="sin-borde relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-zinc-100 flex-none">
                 <img src="${song.coverUrl}" alt="Cover" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
-                <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <button onclick="toggleTrackPlayback('${song.id}')" class="p-1 rounded-full bg-white/20 text-white">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      ${isPlaying ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9z" />' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />'}
-                    </svg>
-                  </button>
-                </div>
-                ${isPlaying ? `
-                  <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <div class="flex gap-[2px] items-end h-4 w-4">
+                <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+                  ${isPlaying ? `
+                    <span class="flex gap-[2px] items-end h-4 w-4">
                       <span class="bg-white w-[2px] animate-pulse h-3"></span>
                       <span class="bg-white w-[2px] animate-pulse h-2" style="animation-delay: 0.1s;"></span>
                       <span class="bg-white w-[2px] animate-pulse h-4" style="animation-delay: 0.2s;"></span>
-                    </div>
-                  </div>
-                ` : ''}
-              </div>
+                    </span>
+                  ` : `
+                    <svg class="w-4 h-4 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  `}
+                </span>
+              </button>
 
               <div class="min-w-0 flex-1">
-                <h4 class="text-xs font-bold text-zinc-800 truncate pr-2">${escapeHtml(song.title)}</h4>
-                <p class="text-[10px] text-zinc-500 truncate mb-1">${escapeHtml(song.artist)}</p>
-                <div class="flex items-center gap-1.5 text-[9px] text-zinc-500 font-semibold truncate">
-                  <span class="w-1 h-1 rounded-full bg-zinc-300 flex-none"></span>
+                <h4 class="text-sm font-bold text-zinc-800 truncate pr-2">${escapeHtml(song.title)}</h4>
+                <p class="text-xs text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
+                <div class="flex items-center gap-1.5 text-[10px] text-zinc-400 truncate mt-0.5">
                   <span class="truncate">Pedida por ${escapeHtml(song.addedBy)}</span>
-                  ${song.playedAt ? '<span class="text-[8px] font-black tracking-wider bg-black/10 text-zinc-700 px-1.5 py-0.5 rounded border border-black/20 uppercase shrink-0">Ya sonó</span>' : ''}
+                  ${song.playedAt ? '<span class="text-[8px] font-black bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full uppercase shrink-0">Ya sonó</span>' : ''}
                 </div>
               </div>
             </div>
 
-            <!-- Botón de Voto Platino -->
-            <button 
+            <!-- Corazón de voto -->
+            <button
               onclick="voteSong('${song.id}')"
-              class="flex items-center gap-1 px-3 py-1.5 rounded-xl border transition duration-300 active:scale-95 shrink-0 flex-none ${
-                isVoted 
-                  ? 'bg-black/10 border-black/30 text-black' 
-                  : 'bg-zinc-50 border-zinc-100 text-zinc-500 hover:text-zinc-700'
+              title="${isVoted ? 'Quitar mi voto' : 'Votar este tema'}"
+              class="flex items-center gap-1.5 px-3.5 py-2 rounded-full transition duration-300 active:scale-95 shrink-0 flex-none ${
+                isVoted
+                  ? 'btn-fiesta'
+                  : 'bg-pink-50 text-fiestaDark'
               }"
             >
-              <svg class="w-3.5 h-3.5 ${isVoted ? 'fill-current text-black' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-4 h-4 ${isVoted ? 'fill-current' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
               <span class="text-xs font-bold font-mono">${song.votes}</span>
@@ -3017,11 +3027,9 @@
           resultsContainer.innerHTML = '';
         } else {
           resultsContainer.innerHTML = `
-            <div class="p-8 text-center bg-zinc-100/10 rounded-2xl border-2 border-zinc-400 border-dashed animate-fadeIn">
-              <svg class="w-8 h-8 text-zinc-300 mx-auto mb-2 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-              </svg>
-              <p class="text-xs text-zinc-500 font-serif">Simulador de Catálogo Spotify</p>
+            <div class="p-8 text-center bg-pink-50/50 rounded-2xl border-2 border-pink-200 border-dashed animate-fadeIn">
+              <span class="text-3xl block mb-2">🎧</span>
+              <p class="text-sm text-zinc-600 font-semibold">Escribí arriba el nombre de una canción<br>o de tu artista favorito</p>
             </div>
           `;
         }
@@ -3031,7 +3039,7 @@
       clearTimeout(searchDebounceTimeout);
       searchDebounceTimeout = setTimeout(async () => {
         if (isSpotifyConnected() || isSharedMode()) {
-          resultsContainer.innerHTML = `<div class="p-4 text-center text-zinc-500 text-xs">Buscando en Spotify real...</div>`;
+          resultsContainer.innerHTML = `<div class="p-4 text-center text-fiestaDark text-sm font-semibold animate-pulse">Buscando tu tema… 🎵</div>`;
           try {
             const tracks = await searchSpotifyCatalog(q);
             renderSearchResults(tracks);
@@ -3091,30 +3099,30 @@
         const votedByMe = !!(existing && existing.voters && existing.voters.includes(currentUser.id));
         window[`track_search_${index}`] = track;
 
+        // Corazón para votar; tilde cuando ya la votaste
         const icon = votedByMe
-          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />'
-          : (existing
-            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />'
-            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />');
+          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />'
+          : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />';
 
         const playOverlay = track.genre === 'Spotify' ? `
-          <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="absolute inset-0 bg-black/35 flex items-center justify-center text-white">
-            <svg class="w-4 h-4 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+          <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+            <svg class="w-5 h-5 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z"/>
             </svg>
           </button>
         ` : '';
 
         resultsContainer.innerHTML += `
-          <div class="flex items-center justify-between gap-3 p-2.5 bg-white hover:bg-zinc-100/30 border-2 border-zinc-900 rounded-2xl transition animate-fadeIn">
+          <div class="card-fiesta flex items-center justify-between gap-3 p-3 rounded-2xl transition animate-fadeIn">
             <div class="flex items-center gap-3 min-w-0">
-              <div class="relative w-10 h-10 rounded-xl overflow-hidden bg-zinc-100 flex-none">
+              <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-zinc-100 flex-none">
                 <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
                 ${playOverlay}
               </div>
               <div class="min-w-0">
-                <h4 class="text-xs font-bold text-zinc-800 truncate">${escapeHtml(track.title)}</h4>
-                <p class="text-[10px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+                <h4 class="text-sm font-bold text-zinc-800 truncate">${escapeHtml(track.title)}</h4>
+                <p class="text-xs text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+                ${votedByMe ? '<p class="text-[10px] text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
               </div>
             </div>
 
@@ -3122,10 +3130,9 @@
               onclick="addSongFromSearch(${index})"
               ${votedByMe ? 'disabled' : ''}
               title="${votedByMe ? 'Ya la votaste' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
-              class="p-2 rounded-xl transition shrink-0"
-              style="background-color: ${votedByMe ? 'rgba(228, 228, 231, 0.6)' : '#18181b'}; color: ${votedByMe ? '#a1a1aa' : '#ffffff'}; cursor: ${votedByMe ? 'not-allowed' : 'pointer'}"
+              class="w-11 h-11 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
             >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-5 h-5 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 ${icon}
               </svg>
             </button>
@@ -3322,36 +3329,36 @@
 
       if (myVotes.length === 0) {
         myVotesBox.innerHTML = `
-          <div class="p-8 text-center bg-zinc-100/10 rounded-2xl border-2 border-zinc-400 border-dashed">
-            <p class="text-xs text-zinc-500 font-serif">Todavía no votaste canciones. ¡Buscá tus favoritas y votá!</p>
+          <div class="p-8 text-center bg-pink-50/50 rounded-2xl border-2 border-pink-200 border-dashed">
+            <p class="text-sm text-zinc-600">Todavía no votaste canciones.<br>¡Buscá tus favoritas y votá! 💖</p>
           </div>
         `;
       } else {
         myVotes.forEach(song => {
           myVotesBox.innerHTML += `
-            <div class="flex items-center justify-between gap-3 p-2.5 bg-white hover:bg-zinc-100/20 border-2 border-zinc-900 rounded-xl transition">
+            <div class="card-fiesta flex items-center justify-between gap-3 p-3 rounded-2xl transition">
               <div class="flex items-center gap-3 min-w-0">
-                <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" class="relative w-9 h-9 rounded-lg overflow-hidden bg-zinc-200 flex-none">
+                <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" class="sin-borde relative w-11 h-11 rounded-xl overflow-hidden bg-zinc-200 flex-none">
                   <img src="${song.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
-                  <span class="absolute inset-0 bg-black/35 flex items-center justify-center text-white">
-                    <svg class="w-3.5 h-3.5 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+                    <svg class="w-4 h-4 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                   </span>
                 </button>
                 <div class="min-w-0">
-                  <h4 class="text-xs font-bold text-zinc-800 truncate">${escapeHtml(song.title)}</h4>
-                  <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
+                  <h4 class="text-sm font-bold text-zinc-800 truncate">${escapeHtml(song.title)}</h4>
+                  <p class="text-xs text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
                 </div>
               </div>
 
               <button
                 onclick="voteSong('${song.id}')"
                 title="Quitar mi voto"
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/10 border border-black/30 text-black transition active:scale-95 shrink-0"
+                class="flex items-center gap-1.5 px-3.5 py-2 rounded-full btn-fiesta transition active:scale-95 shrink-0"
               >
-                <svg class="w-3.5 h-3.5 fill-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-4 h-4 fill-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                <span class="text-[9px] font-bold uppercase tracking-wide">Votada</span>
+                <span class="text-[10px] font-bold">Votada</span>
               </button>
             </div>
           `;
@@ -3363,8 +3370,8 @@
 
       if (mine.length === 0) {
         mySongsBox.innerHTML = `
-          <div class="p-8 text-center bg-zinc-100/10 rounded-2xl border-2 border-zinc-400 border-dashed">
-            <p class="text-xs text-zinc-500 font-serif">Aún no has solicitado canciones para la fiesta.</p>
+          <div class="p-8 text-center bg-pink-50/50 rounded-2xl border-2 border-pink-200 border-dashed">
+            <p class="text-sm text-zinc-600">Acá van a aparecer las canciones que pidas vos. 🎤</p>
           </div>
         `;
         return;
@@ -3505,18 +3512,18 @@
       pendingBox.innerHTML = pending.length === 0
         ? '<p class="p-8 text-center text-zinc-400 text-sm font-serif">No quedan temas pendientes. ¡Sonó todo! 🎉</p>'
         : pending.map((song, i) => `
-          <div class="flex items-center justify-between gap-4 p-4 bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl">
+          <div class="flex items-center justify-between gap-4 p-4 card-fiesta rounded-2xl">
             <div class="flex items-center gap-4 min-w-0">
-              <span class="text-2xl font-black font-mono ${i === 0 ? 'text-black' : 'text-zinc-400'} w-10 text-center shrink-0">${i + 1}</span>
+              <span class="text-2xl font-black font-mono ${i === 0 ? 'text-fiesta' : 'text-zinc-300'} w-10 text-center shrink-0">${i + 1}</span>
               <div class="min-w-0">
                 <h4 class="text-base font-extrabold text-zinc-900 truncate">${escapeHtml(song.title)}</h4>
                 <p class="text-xs text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
               </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
-              <span class="text-xl font-black text-black font-mono">${song.votes} ★</span>
+              <span class="text-xl font-black text-fiestaDark font-mono">${song.votes} 💖</span>
               <button onclick="markSongPlayed('${song.id}', true)"
-                class="px-4 py-2.5 rounded-xl bg-black text-white font-extrabold text-[10px] tracking-wider uppercase transition active:scale-95">
+                class="px-4 py-2.5 rounded-full btn-fiesta font-extrabold text-[10px] tracking-wider uppercase transition active:scale-95">
                 Ya sonó
               </button>
             </div>
@@ -3527,7 +3534,7 @@
       playedBox.innerHTML = played.length === 0
         ? '<p class="text-xs text-zinc-400 font-serif">Ninguna todavía.</p>'
         : played.map(song => `
-          <div class="flex items-center justify-between gap-3 p-2.5 bg-zinc-50/40 border-2 border-zinc-900 rounded-xl opacity-60">
+          <div class="flex items-center justify-between gap-3 p-2.5 bg-zinc-50/40 border border-pink-100 rounded-xl opacity-60">
             <div class="min-w-0">
               <h5 class="text-xs font-bold text-zinc-700 truncate line-through">${escapeHtml(song.title)}</h5>
               <p class="text-[10px] text-zinc-400 truncate">${escapeHtml(song.artist)} · ${song.votes} votos</p>
