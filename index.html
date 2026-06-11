@@ -123,27 +123,7 @@
 </head>
 <body class="text-zinc-900 min-h-screen flex flex-col items-center overflow-x-hidden pb-28 relative">
 
-  <!-- ==========================================
-       DECORACIÓN DE LUCES Y BRILLOS DEL FONDO
-       ========================================== -->
-  <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
-    <div class="bokeh-light w-80 h-80 -top-10 -left-10"></div>
-    <div class="bokeh-light w-80 h-80 -top-10 -right-10"></div>
-    
-    <!-- Estrellas destellantes en posiciones estratégicas -->
-    <svg class="absolute star-sparkle top-[12%] left-[15%] w-5 h-5 text-black/40" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/>
-    </svg>
-    <svg class="absolute star-sparkle top-[15%] right-[10%] w-4 h-4 text-black/50" viewBox="0 0 24 24" fill="currentColor" style="animation-delay: 2s;">
-      <path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/>
-    </svg>
-    <svg class="absolute star-sparkle bottom-[12%] left-[10%] w-4 h-4 text-black/30" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/>
-    </svg>
-    <svg class="absolute star-sparkle bottom-[8%] right-[18%] w-5 h-5 text-black/40" viewBox="0 0 24 24" fill="currentColor" style="animation-delay: 1.5s;">
-      <path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/>
-    </svg>
-  </div>
+  <!-- Fondo blanco puro y limpio: sin luces ni estrellas decorativas (look minimalista) -->
 
   <!-- CONTENEDOR DE ALERTAS TOASTS -->
   <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm pointer-events-none"></div>
@@ -280,7 +260,41 @@
         />
       </div>
 
+      <!-- Filtro por tipo de grupo (etiquetas): se arma solo con los grupos que existen -->
+      <div id="guests-group-chips" class="flex flex-wrap gap-2"></div>
+
       <div id="guests-list" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: DISTRIBUCIÓN DE MESAS (SOLO ADMINS) -->
+  <div id="mesas-modal" class="fixed inset-0 z-50 bg-white overflow-y-auto hidden">
+    <div class="max-w-2xl mx-auto p-5 pb-16 space-y-4">
+      <div class="flex justify-between items-center sticky top-0 bg-white py-3 z-10">
+        <div>
+          <h3 class="text-base font-extrabold text-black tracking-[0.2em] uppercase">🍽️ Mesas</h3>
+          <p class="text-[10px] text-zinc-500 uppercase tracking-wider">Distribución de invitados</p>
+        </div>
+        <button onclick="closeMesasPanel()" class="p-2.5 rounded-xl bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-black transition">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="mesas-stats" class="grid grid-cols-3 gap-2"></div>
+
+      <button onclick="addMesa()"
+        class="w-full py-3 rounded-xl bg-black text-white font-extrabold text-[10px] tracking-wider uppercase transition active:scale-95">
+        ➕ Agregar mesa
+      </button>
+
+      <div id="mesas-list" class="space-y-3"></div>
+
+      <div class="pt-2">
+        <h4 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pb-2">Sin mesa asignada</h4>
+        <div id="mesas-unseated" class="flex flex-wrap gap-2"></div>
+      </div>
     </div>
   </div>
 
@@ -461,44 +475,6 @@
         </p>
       </div>
 
-      <!-- Consejo: login de Spotify en el navegador para escuchar completo -->
-      <div id="spotify-login-tip" class="p-4 rounded-2xl bg-[#1DB954]/10 border-2 border-[#1DB954] flex items-start gap-3 hidden">
-        <span class="text-base leading-none mt-0.5">🎧</span>
-        <div class="flex-1 min-w-0">
-          <p class="text-[11px] text-zinc-800 leading-relaxed">
-            ¿Tenés <strong>Spotify Premium</strong>? Iniciá sesión una sola vez en Spotify
-            desde este navegador y vas a escuchar las canciones <strong>completas</strong> dentro de CatApp.
-          </p>
-          <a href="https://accounts.spotify.com/es/login" target="_blank" rel="noopener"
-             class="inline-block mt-2 px-3.5 py-1.5 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-wide transition active:scale-95">
-            INICIAR SESIÓN EN SPOTIFY
-          </a>
-        </div>
-        <button onclick="dismissSpotifyTip()" title="Cerrar" class="p-1.5 rounded-lg text-zinc-600 hover:text-black transition shrink-0">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Selector de Modos -->
-      <div class="p-1 bg-zinc-50 rounded-2xl border-2 border-zinc-900 flex">
-        <button 
-          id="btn-search-spotify" 
-          onclick="setSearchMode('spotify')"
-          class="flex-1 text-center py-2 text-xs font-bold tracking-wide rounded-xl transition bg-zinc-100 text-black"
-        >
-          Buscador de Temas
-        </button>
-        <button 
-          id="btn-search-playlist" 
-          onclick="setSearchMode('playlist')"
-          class="flex-1 text-center py-2 text-xs font-bold tracking-wide rounded-xl transition text-zinc-500"
-        >
-          Importar Playlist
-        </button>
-      </div>
-
       <!-- Buscador Manual -->
       <div id="spotify-search-panel" class="space-y-4">
         <div class="relative">
@@ -551,73 +527,6 @@
         </div>
       </div>
 
-      <!-- Pegar Enlace Playlist -->
-      <div id="playlist-import-panel" class="space-y-4 hidden">
-        <div class="p-5 rounded-2xl bg-zinc-100/10 border-2 border-zinc-900 space-y-3">
-          <h4 class="text-xs font-bold tracking-[0.15em] text-zinc-700 uppercase">Transferir Playlist</h4>
-          <p class="text-[11px] text-zinc-500 leading-relaxed">
-            Pega el enlace de tu lista de reproducción pública de Spotify. CatApp filtrará los temas automáticamente para que los confirmes en lote.
-          </p>
-          <div class="flex gap-2">
-            <input 
-              type="text" 
-              id="playlist-url-input"
-              placeholder="https://open.spotify.com/playlist/..."
-              class="flex-1 bg-zinc-50 border-2 border-zinc-400 focus:border-zinc-900 rounded-xl px-3 py-2 text-[11px] text-black placeholder-zinc-300 outline-none"
-            />
-            <button 
-              onclick="analyzePlaylist()"
-              class="px-4 py-2 bg-black text-white hover:bg-zinc-800 font-extrabold text-xs rounded-xl transition active:scale-95 shrink-0"
-            >
-              Analizar
-            </button>
-          </div>
-        </div>
-
-        <!-- Caja de previsualización para importación -->
-        <div id="import-preview-box" class="space-y-3 bg-zinc-50/80 p-4 rounded-2xl border-2 border-zinc-900 hidden">
-          <div class="flex justify-between items-center pb-2 border-b border-zinc-100">
-            <div>
-              <h4 id="import-playlist-title" class="text-xs font-bold text-zinc-800">Nombre Playlist</h4>
-              <p id="import-playlist-author" class="text-[9px] text-zinc-500">Por Creador</p>
-            </div>
-            <button onclick="closeImportPreview()" class="text-zinc-500 hover:text-black">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div id="import-tracks-list" class="space-y-1.5 max-h-60 overflow-y-auto pr-1 no-scrollbar">
-            <!-- Temas contenidos en la playlist -->
-          </div>
-
-          <button 
-            onclick="confirmImport()"
-            class="w-full bg-black text-white font-extrabold text-xs py-3.5 rounded-xl transition uppercase tracking-wider active:scale-95 shadow-lg"
-          >
-            Importar Seleccionados
-          </button>
-        </div>
-
-        <!-- Tarjetas Preset (Música de Cata) -->
-        <div class="grid grid-cols-2 gap-3">
-          <div 
-            onclick="loadPresetPlaylist(0)"
-            class="p-3.5 bg-zinc-100/10 border-2 border-zinc-900 rounded-2xl cursor-pointer text-center group transition"
-          >
-            <span class="text-[9px] text-zinc-600 font-extrabold tracking-widest uppercase block mb-1">CATA'S FAVS</span>
-            <span class="text-xs font-semibold text-zinc-500 group-hover:text-black">Reggaeton Hype XV</span>
-          </div>
-          <div 
-            onclick="loadPresetPlaylist(1)"
-            class="p-3.5 bg-zinc-100/10 border-2 border-zinc-900 rounded-2xl cursor-pointer text-center group transition"
-          >
-            <span class="text-[9px] text-zinc-600 font-extrabold tracking-widest uppercase block mb-1">CLUB REMIXES</span>
-            <span class="text-xs font-semibold text-zinc-500 group-hover:text-black">Electro Dance Session</span>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- VISTA 3: MI ESPACIO & SUGERENCIAS -->
@@ -639,20 +548,6 @@
         </div>
       </div>
 
-      <!-- Sugeridas para ti -->
-      <div class="space-y-3">
-        <h3 class="text-xs tracking-wider text-zinc-500 uppercase font-extrabold flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-zinc-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          Sugerencias XV de Cata
-        </h3>
-        
-        <div id="suggestions-carousel" class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x no-scrollbar">
-          <!-- Carrusel de canciones sugeridas -->
-        </div>
-      </div>
-
       <!-- Mis Votos -->
       <div class="space-y-3">
         <h3 class="text-xs tracking-wider text-zinc-500 uppercase font-extrabold">Mis Votos</h3>
@@ -666,92 +561,6 @@
         <h3 class="text-xs tracking-wider text-zinc-500 uppercase font-extrabold">Mi Historial de Pedidos</h3>
         <div id="my-songs-container" class="space-y-2">
           <!-- Listado de temas solicitados por mí -->
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL: ESCÁNER DE AUDIO AMBIENTE (MIC) -->
-    <div id="mic-modal" class="fixed inset-0 z-50 bg-white/95 backdrop-blur-2xl flex items-center justify-center p-6 hidden animate-fadeIn">
-      <div class="w-full max-w-sm bg-zinc-50/50 border-2 border-zinc-900 p-6 rounded-3xl text-center space-y-6 shadow-2xl relative overflow-hidden">
-        
-        <button 
-          onclick="closeMicModal()" 
-          class="absolute top-4 right-4 p-2 rounded-xl bg-zinc-100 text-zinc-500 hover:text-black transition"
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <h3 class="text-[9px] tracking-[0.2em] text-zinc-500 uppercase font-bold">Identificador Acústico</h3>
-
-        <!-- Estado de Escuchando -->
-        <div id="mic-stage-listening" class="space-y-6">
-          <div class="relative flex justify-center items-center h-28">
-            <div class="absolute w-20 h-20 rounded-full bg-black/5 animate-ping"></div>
-            <div class="absolute w-24 h-24 rounded-full bg-black/2.5 animate-ping" style="animation-delay: 0.3s;"></div>
-            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-zinc-300 to-zinc-600 flex items-center justify-center text-white shadow-xl shadow-black/10">
-              <svg class="w-6 h-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-            </div>
-          </div>
-          <div>
-            <h4 class="text-sm font-bold text-zinc-800">Escuchando la Cabina de DJ...</h4>
-            <p class="text-[10px] text-zinc-500 mt-1.5">Apunta con el teléfono hacia el sonido de la fiesta</p>
-          </div>
-        </div>
-
-        <!-- Estado de Analizando -->
-        <div id="mic-stage-analyzing" class="space-y-6 hidden">
-          <div class="flex justify-center items-center h-28 gap-1.5">
-            <span class="w-1 bg-black rounded-full animate-bounce h-14" style="animation-duration: 0.5s;"></span>
-            <span class="w-1 bg-zinc-500 rounded-full animate-bounce h-10" style="animation-duration: 0.5s; animation-delay: 0.1s;"></span>
-            <span class="w-1 bg-black rounded-full animate-bounce h-16" style="animation-duration: 0.5s; animation-delay: 0.2s;"></span>
-            <span class="w-1 bg-zinc-500 rounded-full animate-bounce h-12" style="animation-duration: 0.5s; animation-delay: 0.3s;"></span>
-            <span class="w-1 bg-black rounded-full animate-bounce h-8" style="animation-duration: 0.5s; animation-delay: 0.4s;"></span>
-          </div>
-          <div>
-            <h4 class="text-sm font-bold text-zinc-800">Decodificando huella acústica...</h4>
-            <p class="text-[10px] text-zinc-500 mt-1">Comparando con el catálogo en vivo de la fiesta de Cata</p>
-          </div>
-        </div>
-
-        <!-- Estado de Éxito -->
-        <div id="mic-stage-success" class="space-y-6 hidden">
-          <div class="relative w-28 h-28 mx-auto rounded-2xl overflow-hidden shadow-2xl border-2 border-zinc-900">
-            <img id="detected-cover" src="" alt="Album" class="w-full h-full object-cover" />
-            <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <button onclick="playSampleAudioDetected()" class="p-2.5 rounded-full bg-white/20 backdrop-blur-md text-white">
-                <svg id="btn-play-detected" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <span class="text-[8px] tracking-widest text-zinc-600 font-extrabold uppercase bg-black/10 px-2.5 py-0.5 rounded border border-black/20">
-              MÚSICA DETECTADA EN BOLICHE
-            </span>
-            <h4 id="detected-title" class="text-sm font-extrabold text-zinc-900 mt-2.5 truncate">-</h4>
-            <p id="detected-artist" class="text-xs text-zinc-500 truncate">-</p>
-          </div>
-
-          <div class="flex gap-2">
-            <button 
-              onclick="startMicScan()" 
-              class="flex-1 bg-zinc-50 border-2 border-zinc-900 hover:border-zinc-200 text-zinc-700 font-bold text-xs py-3 rounded-xl transition"
-            >
-              Re-escanear
-            </button>
-            <button 
-              onclick="addDetectedSong()" 
-              class="flex-1 bg-black text-white font-bold text-xs py-3 rounded-xl transition shadow-xl active:scale-95"
-            >
-              Votar este Tema
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -808,8 +617,8 @@
     </div>
 
     <!-- NAV BAR FLOTANTE INFERIOR -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md bg-zinc-50/95 border-2 border-zinc-900 backdrop-blur-2xl px-4 py-2.5 rounded-full shadow-2xl flex justify-between items-center">
-      <button 
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md bg-white border-2 border-zinc-900 backdrop-blur-2xl px-6 py-2.5 rounded-full shadow-2xl flex justify-around items-center">
+      <button
         id="nav-soundtrack"
         onclick="switchTab('soundtrack')"
         class="sin-borde flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 text-black scale-105"
@@ -820,19 +629,7 @@
         <span class="text-[9px] font-bold tracking-wide">Ranking</span>
       </button>
 
-      <button 
-        onclick="openMicModal()"
-        class="relative -translate-y-4 w-14 h-14 rounded-full bg-gradient-to-tr from-zinc-300 via-zinc-900 to-zinc-400 flex items-center justify-center text-white shadow-xl shadow-black/5 hover:scale-105 active:scale-95 transition-all duration-300"
-        title="Escanear Audio"
-      >
-        <div class="absolute inset-[1.5px] rounded-full bg-zinc-50 flex items-center justify-center">
-          <svg class="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-          </svg>
-        </div>
-      </button>
-
-      <button 
+      <button
         id="nav-search"
         onclick="switchTab('search')"
         class="sin-borde flex flex-col items-center gap-1 p-2 rounded-2xl transition-all duration-300 text-zinc-500 hover:text-zinc-700"
@@ -1430,18 +1227,12 @@
       document.getElementById('profile-code').innerText = currentUser.code;
       document.getElementById('profile-avatar').innerText = currentUser.name.charAt(0).toUpperCase();
 
-      // Los invitados no ven el ranking ni importan playlists: solo votan.
+      // Los invitados no ven el ranking: solo buscan y votan temas.
       // El ranking, los votos por invitado y las estadísticas son de los admins.
       document.getElementById('nav-soundtrack').classList.toggle('hidden', !isAdmin());
-      document.getElementById('btn-search-playlist').classList.toggle('hidden', !isAdmin());
       document.getElementById('spotify-api-status-banner').classList.toggle('hidden', !isAdmin());
       const searchLabel = document.querySelector('#nav-search span');
       if (searchLabel) searchLabel.innerText = isAdmin() ? 'Añadir' : 'Votar';
-      if (!isAdmin() && currentSearchMode === 'playlist') setSearchMode('spotify');
-
-      // Consejo para escuchar completo (se muestra hasta que el invitado lo cierre)
-      document.getElementById('spotify-login-tip').classList.toggle('hidden',
-        localStorage.getItem('catapp_spotify_tip_oculto') === '1');
 
       updateSpotifyBannerUI();
       switchTab(isAdmin() ? 'soundtrack' : 'search');
@@ -1449,7 +1240,8 @@
 
     function dismissSpotifyTip() {
       localStorage.setItem('catapp_spotify_tip_oculto', '1');
-      document.getElementById('spotify-login-tip').classList.add('hidden');
+      const tip = document.getElementById('spotify-login-tip');
+      if (tip) tip.classList.add('hidden');
     }
 
     // ==========================================
@@ -1963,10 +1755,16 @@
       clearTimeout(partyRefreshTimer);
       partyRefreshTimer = setTimeout(async () => {
         await loadPartySongs();
-        // La lista de invitados solo la miran los admins: se refresca para ellos
+        // La lista de invitados y las mesas solo las miran los admins
         if (isAdmin()) {
           await loadGuests();
           renderGuestsPanel();
+          // Mesas: solo refresca si el panel está abierto y la base las comparte
+          const mesasModal = document.getElementById('mesas-modal');
+          if (mesasShared && mesasModal && !mesasModal.classList.contains('hidden')) {
+            await loadMesas();
+            renderMesasPanel();
+          }
         }
         renderAll();
       }, 350);
@@ -1977,6 +1775,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, schedulePartyRefresh)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, schedulePartyRefresh)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'guests' }, schedulePartyRefresh)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'mesas' }, schedulePartyRefresh)
         .subscribe();
 
       // Respaldo por si el realtime se corta (wifi de salón de fiestas)
@@ -2108,6 +1907,50 @@
     // INVITADOS: DATOS, PANEL DE ADMINS Y QR
     // ==========================================
     let guests = [];
+
+    // Filtro activo por tipo de grupo en el panel de invitados ('' = todos)
+    let guestGroupFilter = '';
+
+    // Paleta de colores para las etiquetas de grupo (look minimalista, fondo claro)
+    const GROUP_TAG_PALETTE = [
+      'bg-rose-100 border-rose-300 text-rose-700',
+      'bg-sky-100 border-sky-300 text-sky-700',
+      'bg-amber-100 border-amber-300 text-amber-700',
+      'bg-emerald-100 border-emerald-300 text-emerald-700',
+      'bg-violet-100 border-violet-300 text-violet-700',
+      'bg-cyan-100 border-cyan-300 text-cyan-700',
+      'bg-fuchsia-100 border-fuchsia-300 text-fuchsia-700',
+      'bg-lime-100 border-lime-300 text-lime-700',
+      'bg-orange-100 border-orange-300 text-orange-700',
+      'bg-teal-100 border-teal-300 text-teal-700'
+    ];
+
+    // Lista ordenada de los grupos (tipos) que existen hoy en la lista
+    function guestGroupList() {
+      const seen = [];
+      guests.forEach(g => { const gr = g.grupo || 'Otros'; if (!seen.includes(gr)) seen.push(gr); });
+      return seen;
+    }
+
+    function groupTagClass(grupo) {
+      const idx = guestGroupList().indexOf(grupo || 'Otros');
+      return GROUP_TAG_PALETTE[(idx < 0 ? 0 : idx) % GROUP_TAG_PALETTE.length];
+    }
+
+    // Etiqueta de "tipo de invitación" según la composición de personas
+    function guestTipoTag(g) {
+      const hasAdults = (g.adults || 0) > 0;
+      const hasKids = (g.kids || 0) > 0 || (g.under5 || 0) > 0;
+      if (hasAdults && hasKids) return { label: '👨‍👩‍👧 Familia', cls: 'bg-zinc-100 border-zinc-300 text-zinc-700' };
+      if (hasAdults) return { label: '🧑 Adultos', cls: 'bg-zinc-100 border-zinc-300 text-zinc-700' };
+      if (hasKids) return { label: '🧒 Chicos', cls: 'bg-zinc-100 border-zinc-300 text-zinc-700' };
+      return { label: '— Sin personas', cls: 'bg-zinc-100 border-zinc-300 text-zinc-500' };
+    }
+
+    function setGuestGroupFilter(grupo) {
+      guestGroupFilter = (guestGroupFilter === grupo) ? '' : grupo;
+      renderGuestsPanel();
+    }
 
     function mapDbGuest(row) {
       return {
@@ -2246,13 +2089,35 @@
         </div>
       `).join('');
 
+      // --- Chips de filtro por tipo de grupo (etiquetas) ---
+      const chipsBox = document.getElementById('guests-group-chips');
+      if (chipsBox) {
+        const grupos = guestGroupList();
+        let chips = `
+          <button onclick="setGuestGroupFilter('')"
+            class="px-3 py-1.5 rounded-full border-2 text-[10px] font-extrabold uppercase tracking-wide transition ${guestGroupFilter === '' ? 'bg-black border-black text-white' : 'bg-white border-zinc-300 text-zinc-600'}">
+            Todos (${guests.length})
+          </button>`;
+        grupos.forEach(gr => {
+          const count = guests.filter(g => (g.grupo || 'Otros') === gr).length;
+          const active = guestGroupFilter === gr;
+          chips += `
+            <button onclick="setGuestGroupFilter('${gr.replace(/'/g, "\\'")}')"
+              class="px-3 py-1.5 rounded-full border-2 text-[10px] font-extrabold uppercase tracking-wide transition ${active ? 'bg-black border-black text-white' : groupTagClass(gr)}">
+              ${escapeHtml(gr)} (${count})
+            </button>`;
+        });
+        chipsBox.innerHTML = chips;
+      }
+
       const query = (document.getElementById('guests-search').value || '').trim().toLowerCase();
-      const filtered = guests.filter(g =>
-        !query ||
-        g.name.toLowerCase().includes(query) ||
-        g.code.toLowerCase().includes(query) ||
-        (g.grupo || '').toLowerCase().includes(query)
-      );
+      const filtered = guests.filter(g => {
+        if (guestGroupFilter && (g.grupo || 'Otros') !== guestGroupFilter) return false;
+        return !query ||
+          g.name.toLowerCase().includes(query) ||
+          g.code.toLowerCase().includes(query) ||
+          (g.grupo || '').toLowerCase().includes(query);
+      });
 
       const CONF_LABELS = { pendiente: '⏳ Pendiente', si: '✅ Confirmó', no: '❌ No viene' };
       const CONF_STYLES = {
@@ -2274,8 +2139,14 @@
         if (g.kids) partes.push(`${g.kids} chico${g.kids > 1 ? 's' : ''}`);
         if (g.under5) partes.push(`${g.under5} menor${g.under5 > 1 ? 'es' : ''} de 5`);
 
+        const tipo = guestTipoTag(g);
+
         html += `
           <div class="p-3 bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl space-y-2.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-full border text-[8px] font-extrabold uppercase tracking-wide ${groupTagClass(g.grupo)}">${escapeHtml(g.grupo || 'Otros')}</span>
+              <span class="px-2 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-wide ${tipo.cls}">${tipo.label}</span>
+            </div>
             <div class="flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <h5 class="text-sm font-extrabold text-zinc-900 truncate">${escapeHtml(g.name)}</h5>
@@ -2582,6 +2453,252 @@
     }
 
     // ==========================================
+    // MESAS: DISTRIBUCIÓN DE INVITADOS (SOLO ADMINS)
+    // ==========================================
+    // Cada mesa: { id, name, capacity, guestIds:[ ids de invitados ] }
+    // Se guarda en este teléfono (localStorage) y, si la base compartida
+    // tiene la tabla "mesas", también se comparte en vivo entre los 4 admins.
+    let mesas = [];
+    let mesasShared = false;   // true si Supabase tiene la tabla "mesas"
+    let mesasLoaded = false;
+
+    function mapDbMesa(row) {
+      return {
+        id: row.id,
+        name: row.name || 'Mesa',
+        capacity: row.capacity || 10,
+        guestIds: Array.isArray(row.guest_ids) ? row.guest_ids : []
+      };
+    }
+
+    function loadLocalMesas() {
+      try {
+        const raw = localStorage.getItem('catapp_mesas');
+        mesas = raw ? JSON.parse(raw) : [];
+      } catch (e) { mesas = []; }
+    }
+
+    function saveLocalMesas() {
+      localStorage.setItem('catapp_mesas', JSON.stringify(mesas));
+    }
+
+    async function loadMesas() {
+      mesasShared = false;
+      if (isSharedMode()) {
+        const { data, error } = await sb.from('mesas').select('*').order('position', { ascending: true });
+        if (!error && data) {
+          mesasShared = true;
+          mesas = data.map(mapDbMesa);
+          saveLocalMesas(); // copia local de respaldo
+          mesasLoaded = true;
+          return;
+        }
+        // Si la tabla todavía no existe en Supabase, se usa el modo local
+      }
+      loadLocalMesas();
+      mesasLoaded = true;
+    }
+
+    // Escribe una mesa en la base compartida (alta o edición)
+    async function saveMesaToDb(mesa) {
+      if (!mesasShared) { saveLocalMesas(); return true; }
+      const payload = { name: mesa.name, capacity: mesa.capacity, guest_ids: mesa.guestIds };
+      const { error } = await sb.from('mesas').update(payload).eq('id', mesa.id);
+      saveLocalMesas();
+      if (error) { console.error('Error al guardar mesa:', error); showToast('No se pudo guardar la mesa.', 'error'); return false; }
+      return true;
+    }
+
+    async function openMesasPanel() {
+      if (!isAdmin()) return;
+      document.getElementById('mesas-modal').classList.remove('hidden');
+      if (guests.length === 0) await loadGuests();
+      await loadMesas();
+      renderMesasPanel();
+    }
+
+    function closeMesasPanel() {
+      document.getElementById('mesas-modal').classList.add('hidden');
+    }
+
+    function guestById(id) {
+      return guests.find(g => g.id === id);
+    }
+
+    // Personas sentadas en una mesa (suma el total de cada invitación)
+    function mesaSeated(mesa) {
+      return mesa.guestIds.reduce((acc, id) => {
+        const g = guestById(id);
+        return acc + (g ? (g.total || 0) : 0);
+      }, 0);
+    }
+
+    // Invitados que todavía no están en ninguna mesa
+    function unseatedGuests() {
+      const seated = new Set();
+      mesas.forEach(m => m.guestIds.forEach(id => seated.add(id)));
+      return guests.filter(g => !seated.has(g.id));
+    }
+
+    async function addMesa() {
+      const nombre = `Mesa ${mesas.length + 1}`;
+      if (mesasShared) {
+        const { data, error } = await sb.from('mesas')
+          .insert({ name: nombre, capacity: 10, guest_ids: [], position: mesas.length })
+          .select('*').single();
+        if (error) { console.error('Error al crear mesa:', error); showToast('No se pudo crear la mesa.', 'error'); return; }
+        mesas.push(mapDbMesa(data));
+      } else {
+        mesas.push({ id: 'm_' + Date.now(), name: nombre, capacity: 10, guestIds: [] });
+      }
+      saveLocalMesas();
+      renderMesasPanel();
+    }
+
+    async function renameMesa(mesaId) {
+      const mesa = mesas.find(m => m.id === mesaId);
+      if (!mesa) return;
+      const nombre = prompt('Nombre de la mesa:', mesa.name);
+      if (nombre === null) return;
+      mesa.name = nombre.trim() || mesa.name;
+      await saveMesaToDb(mesa);
+      renderMesasPanel();
+    }
+
+    async function setMesaCapacity(mesaId) {
+      const mesa = mesas.find(m => m.id === mesaId);
+      if (!mesa) return;
+      const cap = prompt(`¿Cuántas personas entran en "${mesa.name}"?`, mesa.capacity);
+      if (cap === null) return;
+      const n = Math.max(1, parseInt(cap) || mesa.capacity);
+      mesa.capacity = n;
+      await saveMesaToDb(mesa);
+      renderMesasPanel();
+    }
+
+    async function deleteMesa(mesaId) {
+      const mesa = mesas.find(m => m.id === mesaId);
+      if (!mesa) return;
+      if (!confirm(`¿Borrar "${mesa.name}"? Los invitados vuelven a quedar sin mesa.`)) return;
+      mesas = mesas.filter(m => m.id !== mesaId);
+      saveLocalMesas();
+      if (mesasShared) {
+        const { error } = await sb.from('mesas').delete().eq('id', mesaId);
+        if (error) { console.error('Error al borrar mesa:', error); showToast('No se pudo borrar en la base compartida.', 'error'); }
+      }
+      renderMesasPanel();
+    }
+
+    // Sienta un invitado en una mesa (lo saca de cualquier otra mesa primero)
+    async function assignGuestToMesa(mesaId, guestId) {
+      if (!guestId) return;
+      const destino = mesas.find(m => m.id === mesaId);
+      if (!destino) return;
+      const afectadas = [destino];
+      mesas.forEach(m => {
+        if (m.id !== mesaId && m.guestIds.includes(guestId)) {
+          m.guestIds = m.guestIds.filter(id => id !== guestId);
+          afectadas.push(m);
+        }
+      });
+      if (!destino.guestIds.includes(guestId)) destino.guestIds.push(guestId);
+      saveLocalMesas();
+      for (const m of afectadas) await saveMesaToDb(m);
+      renderMesasPanel();
+    }
+
+    async function removeGuestFromMesa(mesaId, guestId) {
+      const mesa = mesas.find(m => m.id === mesaId);
+      if (!mesa) return;
+      mesa.guestIds = mesa.guestIds.filter(id => id !== guestId);
+      saveLocalMesas();
+      await saveMesaToDb(mesa);
+      renderMesasPanel();
+    }
+
+    function renderMesasPanel() {
+      const modal = document.getElementById('mesas-modal');
+      if (!modal || modal.classList.contains('hidden')) return;
+
+      const totalPersonas = guests.reduce((acc, g) => acc + (g.total || 0), 0);
+      const sentadas = mesas.reduce((acc, m) => acc + mesaSeated(m), 0);
+      document.getElementById('mesas-stats').innerHTML = [
+        [mesas.length, 'Mesas'],
+        [sentadas, 'Sentados'],
+        [totalPersonas - sentadas, 'Sin mesa']
+      ].map(([n, label]) => `
+        <div class="bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl p-2.5 text-center">
+          <span class="text-lg font-black text-black font-mono block">${n}</span>
+          <span class="text-[7px] text-zinc-500 uppercase font-bold tracking-wider">${label}</span>
+        </div>
+      `).join('');
+
+      // Opciones para sentar invitados: los que todavía no tienen mesa
+      const libres = unseatedGuests();
+      const optionsLibres = libres.map(g =>
+        `<option value="${g.id}">${escapeHtml(g.name)} (${g.total})</option>`
+      ).join('');
+
+      const listBox = document.getElementById('mesas-list');
+      if (mesas.length === 0) {
+        listBox.innerHTML = '<p class="p-8 text-center text-zinc-400 text-xs font-serif">Todavía no creaste ninguna mesa. Tocá “Agregar mesa”.</p>';
+      } else {
+        listBox.innerHTML = mesas.map(mesa => {
+          const seated = mesaSeated(mesa);
+          const lleno = seated >= mesa.capacity;
+          const chips = mesa.guestIds.map(id => {
+            const g = guestById(id);
+            if (!g) return '';
+            return `
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border-2 border-zinc-900 text-[10px] font-bold text-zinc-800">
+                ${escapeHtml(g.name)} <span class="text-zinc-400 font-mono">${g.total}</span>
+                <button onclick="removeGuestFromMesa('${mesa.id}','${g.id}')" title="Quitar de la mesa"
+                  class="sin-borde -mr-1 w-4 h-4 flex items-center justify-center rounded-full bg-zinc-200 text-zinc-600 hover:text-red-500 text-[10px] leading-none">×</button>
+              </span>`;
+          }).join('');
+
+          return `
+            <div class="p-3 bg-zinc-50/80 border-2 border-zinc-900 rounded-2xl space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <button onclick="renameMesa('${mesa.id}')" title="Cambiar el nombre"
+                  class="sin-borde text-left min-w-0 flex-1">
+                  <h5 class="text-sm font-extrabold text-zinc-900 truncate">${escapeHtml(mesa.name)} ✏️</h5>
+                </button>
+                <button onclick="setMesaCapacity('${mesa.id}')" title="Cambiar capacidad"
+                  class="px-2.5 py-1 rounded-lg border text-[10px] font-extrabold font-mono ${lleno ? 'bg-red-100 border-red-300 text-red-700' : 'bg-emerald-100 border-emerald-300 text-emerald-700'}">
+                  ${seated}/${mesa.capacity}
+                </button>
+                <button onclick="deleteMesa('${mesa.id}')" title="Borrar mesa"
+                  class="px-2.5 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-red-500 text-[10px]">🗑️</button>
+              </div>
+
+              <div class="flex flex-wrap gap-1.5">
+                ${chips || '<span class="text-[10px] text-zinc-400 italic">Mesa vacía</span>'}
+              </div>
+
+              <select onchange="assignGuestToMesa('${mesa.id}', this.value); this.value='';"
+                class="w-full bg-white border-2 border-zinc-400 focus:border-zinc-900 rounded-xl py-2 px-3 text-xs text-black outline-none">
+                <option value="">➕ Sentar invitado…</option>
+                ${optionsLibres}
+              </select>
+            </div>`;
+        }).join('');
+      }
+
+      // Bloque de invitados sin mesa (etiquetas rápidas)
+      const unseatedBox = document.getElementById('mesas-unseated');
+      if (libres.length === 0) {
+        unseatedBox.innerHTML = '<span class="text-[11px] text-emerald-700 font-bold">¡Todos los invitados tienen mesa! 🎉</span>';
+      } else {
+        unseatedBox.innerHTML = libres.map(g => `
+          <span class="px-2.5 py-1 rounded-full border-2 ${groupTagClass(g.grupo)} text-[10px] font-bold">
+            ${escapeHtml(g.name)} <span class="opacity-60 font-mono">${g.total}</span>
+          </span>
+        `).join('');
+      }
+    }
+
+    // ==========================================
     // CAMBIAR PESTAÑAS (TAB SYSTEM)
     // ==========================================
     function switchTab(tabId) {
@@ -2666,6 +2783,10 @@
           <button onclick="openGuestsPanel()"
             class="py-3 rounded-2xl bg-zinc-900 text-white font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
             👥 Invitados
+          </button>
+          <button onclick="openMesasPanel()"
+            class="col-span-2 py-3 rounded-2xl bg-white text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95">
+            🍽️ Mesas
           </button>
           <button onclick="exportRankingToSpotify()"
             class="col-span-2 py-3 rounded-2xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
@@ -2877,25 +2998,12 @@
     // ==========================================
     // BUSCADOR REAL DE SPOTIFY CON RESPALDO
     // ==========================================
+    // El buscador es ahora único (se quitó "Importar playlist"). La función se
+    // mantiene por compatibilidad y es a prueba de nulos.
     function setSearchMode(mode) {
-      currentSearchMode = mode;
-      
-      const btnSpotify = document.getElementById('btn-search-spotify');
-      const btnPlaylist = document.getElementById('btn-search-playlist');
+      currentSearchMode = 'spotify';
       const panelSpotify = document.getElementById('spotify-search-panel');
-      const panelPlaylist = document.getElementById('playlist-import-panel');
-
-      if (mode === 'spotify') {
-        btnSpotify.className = "flex-1 text-center py-2 text-xs font-bold tracking-wide rounded-xl transition bg-zinc-100 text-black";
-        btnPlaylist.className = "flex-1 text-center py-2 text-xs font-bold tracking-wide rounded-xl transition text-zinc-500";
-        panelSpotify.classList.remove('hidden');
-        panelPlaylist.classList.add('hidden');
-      } else {
-        btnSpotify.className = "flex-1 text-center py-2 text-xs font-bold tracking-wide rounded-xl transition text-zinc-500";
-        btnPlaylist.className = "flex-1 text-center py-2 text-xs font-bold tracking-wide rounded-xl transition bg-zinc-100 text-black";
-        panelSpotify.classList.add('hidden');
-        panelPlaylist.classList.remove('hidden');
-      }
+      if (panelSpotify) panelSpotify.classList.remove('hidden');
     }
 
     let searchDebounceTimeout;
@@ -3207,39 +3315,6 @@
       const myVotes = songs.filter(s => s.voters && s.voters.includes(currentUser.id));
       document.getElementById('profile-contributions').innerText =
         isAdmin() ? myVotes.length : `${myVotes.length}/${MAX_VOTES_PER_GUEST}`;
-
-      const carousel = document.getElementById('suggestions-carousel');
-      carousel.innerHTML = '';
-      
-      const unadded = SPOTIFY_CATALOG.filter(track => !songs.some(s => s.title.toLowerCase() === track.title.toLowerCase()));
-      const available = unadded.length > 0 ? unadded : SPOTIFY_CATALOG;
-
-      available.forEach((track, index) => {
-        window[`track_suggest_${index}`] = track;
-
-        carousel.innerHTML += `
-          <div class="w-36 shrink-0 snap-start bg-zinc-100/15 border-2 border-zinc-900 p-3 rounded-2xl flex flex-col justify-between gap-3 transition">
-            <div class="relative aspect-square rounded-xl overflow-hidden bg-zinc-100">
-              <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
-              <span class="absolute top-1.5 right-1.5 text-[8px] font-black tracking-wider bg-black/70 text-zinc-300 px-1.5 py-0.5 rounded uppercase">
-                ${escapeHtml(track.genre)}
-              </span>
-            </div>
-
-            <div class="min-w-0">
-              <h4 class="text-[11px] font-bold text-zinc-800 truncate">${escapeHtml(track.title)}</h4>
-              <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
-            </div>
-
-            <button
-              onclick="addSongFromSuggest(${index})"
-              class="w-full py-2 rounded-xl text-[9px] bg-zinc-100 hover:bg-black hover:text-white transition font-bold tracking-wider uppercase border border-zinc-200"
-            >
-              Votar
-            </button>
-          </div>
-        `;
-      });
 
       // Mis Votos: las canciones que voté, con opción de retirar el voto
       const myVotesBox = document.getElementById('my-votes-container');

@@ -56,11 +56,23 @@ create table if not exists public.guests (
   created_at timestamptz not null default now()
 );
 
+-- Distribución de mesas (la editan solo los admins desde la app).
+-- guest_ids: lista de invitados (ids de la tabla guests) sentados en la mesa.
+create table if not exists public.mesas (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  capacity int not null default 10,
+  guest_ids jsonb not null default '[]'::jsonb,
+  position int not null default 0,
+  created_at timestamptz not null default now()
+);
+
 -- Seguridad a nivel de fila: la fiesta es abierta para los invitados
 -- (la clave "anon" solo permite lo que definen estas políticas)
 alter table public.songs enable row level security;
 alter table public.votes enable row level security;
 alter table public.guests enable row level security;
+alter table public.mesas enable row level security;
 
 create policy "lectura publica de canciones"  on public.songs for select using (true);
 create policy "invitados agregan canciones"   on public.songs for insert with check (true);
@@ -77,7 +89,13 @@ create policy "admins agregan invitados"   on public.guests for insert with chec
 create policy "admins editan invitados"    on public.guests for update using (true) with check (true);
 create policy "admins borran invitados"    on public.guests for delete using (true);
 
+create policy "lectura de mesas"  on public.mesas for select using (true);
+create policy "alta de mesas"     on public.mesas for insert with check (true);
+create policy "editar mesas"      on public.mesas for update using (true) with check (true);
+create policy "borrar mesas"      on public.mesas for delete using (true);
+
 -- Sincronización en vivo: los cambios se transmiten a todos los teléfonos
 alter publication supabase_realtime add table public.songs;
 alter publication supabase_realtime add table public.votes;
 alter publication supabase_realtime add table public.guests;
+alter publication supabase_realtime add table public.mesas;
