@@ -500,6 +500,36 @@
         <div id="search-results" class="space-y-2">
           <!-- Resultados dinámicos de búsqueda -->
         </div>
+
+        <!-- Ranking personal: las más escuchadas de la cuenta de Spotify conectada -->
+        <div id="top-tracks-section" class="space-y-3 hidden">
+          <div>
+            <h3 class="text-xs tracking-wider text-zinc-500 uppercase font-extrabold flex items-center gap-1.5">
+              🏆 Tus más escuchadas
+              <span id="top-tracks-count" class="text-zinc-400 font-mono normal-case tracking-normal"></span>
+            </h3>
+            <p class="text-[10px] text-zinc-400 mt-1 leading-relaxed">
+              Tu ranking personal de Spotify. Tocá el botón de la derecha para pedirlas en la fiesta.
+            </p>
+          </div>
+          <div class="p-1 bg-zinc-50 rounded-2xl border-2 border-zinc-900 flex">
+            <button id="btn-top-range-short_term" onclick="setTopTracksRange('short_term')"
+              class="flex-1 text-center py-1.5 text-[10px] font-bold tracking-wide rounded-xl transition text-zinc-500">
+              Último mes
+            </button>
+            <button id="btn-top-range-medium_term" onclick="setTopTracksRange('medium_term')"
+              class="flex-1 text-center py-1.5 text-[10px] font-bold tracking-wide rounded-xl transition bg-zinc-100 text-black">
+              Últimos 6 meses
+            </button>
+            <button id="btn-top-range-long_term" onclick="setTopTracksRange('long_term')"
+              class="flex-1 text-center py-1.5 text-[10px] font-bold tracking-wide rounded-xl transition text-zinc-500">
+              De siempre
+            </button>
+          </div>
+          <div id="top-tracks-list" class="space-y-1.5">
+            <!-- Top 100 personal de Spotify -->
+          </div>
+        </div>
       </div>
 
       <!-- Pegar Enlace Playlist -->
@@ -822,7 +852,7 @@
     //      Debe ser HTTPS (para pruebas locales usa http://127.0.0.1:PUERTO/index.html).
     //   3. Pega tu Client ID aquí abajo.
     const SPOTIFY_CLIENT_ID = '714f08a16c5d452ebda528fd1190ab4a';
-    const SPOTIFY_SCOPES = 'user-read-private playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private';
+    const SPOTIFY_SCOPES = 'user-read-private user-top-read playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private';
     const SPOTIFY_AUTH_STORAGE_KEY = 'catapp_spotify_auth';
     const SPOTIFY_PKCE_STORAGE_KEY = 'catapp_spotify_pkce_verifier';
 
@@ -1024,6 +1054,11 @@
     // Sesión oficial de Spotify (Authorization Code + PKCE)
     let spotifyAuth = null;        // { accessToken, refreshToken, expiresAt }
     let spotifyProfileName = null; // Nombre de la cuenta de Spotify conectada
+
+    // Ranking personal "Tus más escuchadas" (Top 100 de la cuenta conectada)
+    let topTracksRange = 'medium_term'; // último mes | últimos 6 meses | de siempre
+    let topTracksPromises = {};         // pedidos en curso (evita pedir dos veces lo mismo)
+    let topTracksByRange = {};          // resultados listos para dibujar, por período
 
     // Cliente de Supabase (null = modo local en este teléfono)
     let sb = null;
@@ -1491,6 +1526,8 @@
         showToast("¡CatApp conectada exitosamente a Spotify Real!", "success");
         fetchSpotifyProfile();
         updateSpotifyBannerUI();
+        // Recién conectado: derecho a su ranking de más escuchadas para ir eligiendo
+        if (currentUser) switchTab('search');
       } catch (err) {
         console.error("Error al canjear el código de Spotify:", err);
         showToast("No se pudo completar la conexión con Spotify. Revisa el Client ID y la Redirect URI.", "error");
@@ -1528,6 +1565,11 @@
     function clearSpotifySession() {
       saveSpotifyAuth(null);
       spotifyProfileName = null;
+      // El ranking personal era de esa cuenta: se descarta y se oculta
+      topTracksPromises = {};
+      topTracksByRange = {};
+      const topSection = document.getElementById('top-tracks-section');
+      if (topSection) topSection.classList.add('hidden');
       updateSpotifyBannerUI();
     }
 
@@ -1603,6 +1645,182 @@
         updateSpotifyBannerUI();
       } catch (err) {
         // No es crítico: el banner mostrará el estado genérico de conexión
+      }
+    }
+
+    // ==========================================
+    // TUS MÁS ESCUCHADAS (TOP 100 PERSONAL)
+    // Al conectar su cuenta de Spotify, cada uno ve su propio ranking
+    // de canciones más escuchadas para ir eligiendo desde ahí.
+    // ==========================================
+    function getTopTracks(range) {
+      if (!topTracksPromises[range]) {
+        topTracksPromises[range] = (async () => {
+          // Spotify entrega como máximo 50 por pedido: dos tandas para llegar a 100
+          const first = await spotifyApi(`/me/top/tracks?time_range=${range}&limit=50`);
+          let items = first.items || [];
+          if (items.length === 50 && first.total > 50) {
+            const more = await spotifyApi(`/me/top/tracks?time_range=${range}&limit=50&offset=50`);
+            items = items.concat(more.items || []);
+          }
+          return items.slice(0, 100).map(mapSpotifyTrack);
+        })().catch(err => {
+          delete topTracksPromises[range]; // permite reintentar más tarde
+          throw err;
+        });
+      }
+      return topTracksPromises[range];
+    }
+
+    function setTopTracksRange(range) {
+      topTracksRange = range;
+      renderTopTracks();
+    }
+
+    // La cuenta conectada antes del cambio no tiene el permiso de "más
+    // escuchadas": se renueva el permiso volviendo a pasar por Spotify
+    function reauthorizeSpotify() {
+      clearSpotifySession();
+      authenticateSpotify();
+    }
+
+    async function renderTopTracks() {
+      const section = document.getElementById('top-tracks-section');
+      const list = document.getElementById('top-tracks-list');
+      const counter = document.getElementById('top-tracks-count');
+      if (!section || !list || !currentUser) return;
+
+      if (!isSpotifyConnected()) {
+        section.classList.add('hidden');
+        return;
+      }
+      section.classList.remove('hidden');
+
+      // Estado visual de los filtros de período
+      ['short_term', 'medium_term', 'long_term'].forEach(r => {
+        const btn = document.getElementById(`btn-top-range-${r}`);
+        if (btn) {
+          btn.className = r === topTracksRange
+            ? "flex-1 text-center py-1.5 text-[10px] font-bold tracking-wide rounded-xl transition bg-zinc-100 text-black"
+            : "flex-1 text-center py-1.5 text-[10px] font-bold tracking-wide rounded-xl transition text-zinc-500";
+        }
+      });
+
+      const range = topTracksRange;
+      if (!topTracksByRange[range]) {
+        if (counter) counter.innerText = '';
+        list.innerHTML = `<div class="p-6 text-center text-zinc-500 text-xs animate-pulse">Cargando tu ranking de Spotify...</div>`;
+        try {
+          topTracksByRange[range] = await getTopTracks(range);
+        } catch (err) {
+          if (range !== topTracksRange) return; // cambió el período mientras cargaba
+          console.error("Error al traer tus más escuchadas:", err);
+          if (err.message === 'SPOTIFY_NO_AUTH') {
+            // La sesión se limpió sola: el banner de conexión ya avisa
+            section.classList.add('hidden');
+            return;
+          }
+          if (/scope|permis/i.test(err.message || '')) {
+            list.innerHTML = `
+              <div class="p-5 text-center bg-zinc-50/80 rounded-2xl border-2 border-zinc-400 space-y-2.5">
+                <p class="text-[11px] text-zinc-600 leading-relaxed">
+                  Spotify necesita un permiso nuevo para mostrar tus más escuchadas.
+                  Es un toque: reconectá tu cuenta y listo.
+                </p>
+                <button onclick="reauthorizeSpotify()"
+                  class="px-4 py-2 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-wide transition active:scale-95">
+                  RECONECTAR SPOTIFY
+                </button>
+              </div>`;
+          } else {
+            list.innerHTML = `
+              <div class="p-5 text-center bg-zinc-50/80 rounded-2xl border-2 border-zinc-400 space-y-2.5">
+                <p class="text-[11px] text-zinc-600">No se pudo cargar tu ranking de Spotify.</p>
+                <button onclick="renderTopTracks()"
+                  class="px-4 py-2 rounded-xl bg-black text-white font-extrabold text-[10px] tracking-wide transition active:scale-95">
+                  REINTENTAR
+                </button>
+              </div>`;
+          }
+          return;
+        }
+      }
+
+      if (range !== topTracksRange) return; // cambió el período mientras cargaba
+
+      const tracks = topTracksByRange[range];
+      if (counter) counter.innerText = tracks.length ? `· Top ${tracks.length}` : '';
+
+      if (tracks.length === 0) {
+        list.innerHTML = `
+          <div class="p-6 text-center bg-zinc-100/10 rounded-2xl border-2 border-zinc-400 border-dashed">
+            <p class="text-xs text-zinc-500 font-serif">Spotify todavía no armó un ranking para este período en tu cuenta.</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = tracks.map((track, index) => {
+        // Mismas reglas que el buscador: si ya está pedida se suma el voto,
+        // y si ya la votaste queda tildada
+        const existing = songs.find(s =>
+          s.title.toLowerCase() === track.title.toLowerCase() ||
+          (s.spotifyId && s.spotifyId === track.id)
+        );
+        const votedByMe = !!(existing && existing.voters && existing.voters.includes(currentUser.id));
+
+        const icon = votedByMe
+          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />'
+          : (existing
+            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />'
+            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />');
+
+        return `
+          <div class="flex items-center justify-between gap-3 p-2.5 hover:bg-zinc-100/30 rounded-2xl transition animate-fadeIn">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-6 text-center text-[10px] font-black text-zinc-400 font-mono shrink-0">${index + 1}</span>
+              <div class="relative w-10 h-10 rounded-xl overflow-hidden bg-zinc-100 flex-none">
+                <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
+                <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="absolute inset-0 bg-black/35 flex items-center justify-center text-white">
+                  <svg class="w-4 h-4 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="min-w-0">
+                <h4 class="text-xs font-bold text-zinc-800 truncate">${escapeHtml(track.title)}</h4>
+                <p class="text-[10px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+              </div>
+            </div>
+
+            <button
+              onclick="addSongFromTop(${index})"
+              ${votedByMe ? 'disabled' : ''}
+              title="${votedByMe ? 'Ya la votaste' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
+              class="p-2 rounded-xl transition shrink-0"
+              style="background-color: ${votedByMe ? 'rgba(228, 228, 231, 0.6)' : '#18181b'}; color: ${votedByMe ? '#a1a1aa' : '#ffffff'}; cursor: ${votedByMe ? 'not-allowed' : 'pointer'}"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                ${icon}
+              </svg>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function addSongFromTop(index) {
+      const track = (topTracksByRange[topTracksRange] || [])[index];
+      if (!track) return;
+
+      const result = await addSongRecord(track);
+      if (result === 'added') {
+        showToast(`"${track.title}" pedida y votada. ¡El DJ la tendrá en cuenta!`, "success");
+      } else if (result === 'voted') {
+        showToast(`¡Le sumaste tu voto a "${track.title}"!`, "success");
+      }
+      if (result) {
+        renderAll();
+        openDedicationModal(songs.find(s => s.title.toLowerCase() === track.title.toLowerCase()));
       }
     }
 
@@ -2357,6 +2575,7 @@
         renderSoundtrack();
       } else if (activeTab === 'search') {
         searchSpotify();
+        renderTopTracks();
       } else if (activeTab === 'profile') {
         renderProfile();
       }
@@ -2634,14 +2853,19 @@
       const resultsContainer = document.getElementById('search-results');
 
       if (!q) {
-        resultsContainer.innerHTML = `
-          <div class="p-8 text-center bg-zinc-100/10 rounded-2xl border-2 border-zinc-400 border-dashed animate-fadeIn">
-            <svg class="w-8 h-8 text-zinc-300 mx-auto mb-2 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-            </svg>
-            <p class="text-xs text-zinc-500 font-serif">Simulador de Catálogo Spotify</p>
-          </div>
-        `;
+        if (isSpotifyConnected()) {
+          // Con la cuenta conectada, el espacio lo ocupa el ranking personal
+          resultsContainer.innerHTML = '';
+        } else {
+          resultsContainer.innerHTML = `
+            <div class="p-8 text-center bg-zinc-100/10 rounded-2xl border-2 border-zinc-400 border-dashed animate-fadeIn">
+              <svg class="w-8 h-8 text-zinc-300 mx-auto mb-2 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+              </svg>
+              <p class="text-xs text-zinc-500 font-serif">Simulador de Catálogo Spotify</p>
+            </div>
+          `;
+        }
         return;
       }
 
