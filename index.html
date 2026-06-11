@@ -704,13 +704,17 @@
     </div>
 
     <!-- REPRODUCTOR EMBEBIDO DE SPOTIFY (completo con Premium; adelanto para el resto) -->
-    <div id="spotify-player" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md hidden">
+    <!-- Flota fijo abajo, por encima de la barra de navegación, con su propia sombra -->
+    <div id="spotify-player" class="fixed left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md hidden" style="bottom: calc(7.5rem + env(safe-area-inset-bottom));">
       <button onclick="closeSpotifyPlayer()" title="Cerrar reproductor" class="absolute -top-2.5 -right-2.5 z-50 w-7 h-7 rounded-full bg-zinc-700 border border-zinc-500 text-white flex items-center justify-center shadow-xl active:scale-95">
         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
-      <iframe id="spotify-player-frame" title="Reproductor de Spotify" style="border-radius:14px" width="100%" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+      <!-- La API de Spotify reemplaza el div interno por el reproductor y permite el play automático -->
+      <div style="border-radius:14px; overflow:hidden; box-shadow:0 12px 35px rgba(0,0,0,0.35);">
+        <div id="spotify-player-frame"></div>
+      </div>
     </div>
 
     <!-- NAV BAR FLOTANTE INFERIOR -->
@@ -1008,6 +1012,12 @@
     let synthInterval = null;
     let previewAudio = null;
     let playingTrackId = null;
+
+    // Controlador del reproductor embebido de Spotify (API oficial).
+    // Permite que la canción arranque sola al tocar play, sin tener que
+    // volver a tocar play dentro del reproductor.
+    let spotifyController = null;
+    let spotifyPendingUri = null;
 
     // Escapa texto externo (nombres de canciones, artistas o invitados) antes
     // de inyectarlo en plantillas HTML, para que comillas o símbolos < > & no
@@ -3987,19 +3997,47 @@
     // Invitados con sesión Premium en el navegador escuchan la canción
     // completa dentro de CatApp; el resto, un adelanto de 30 segundos
     // ==========================================
+    // La API de Spotify nos avisa cuando el reproductor está listo y nos da
+    // el controlador para cargar canciones y arrancar el play por código.
+    window.onSpotifyIframeApiReady = (IFrameAPI) => {
+      const element = document.getElementById('spotify-player-frame');
+      if (!element) return;
+      IFrameAPI.createController(element, { width: '100%', height: 80, uri: '' }, (controller) => {
+        spotifyController = controller;
+        // Si el usuario tocó play antes de que el reproductor estuviera listo,
+        // largamos esa canción ahora.
+        if (spotifyPendingUri) {
+          controller.loadUri(spotifyPendingUri);
+          controller.play();
+          spotifyPendingUri = null;
+        }
+      });
+    };
+
     function openSpotifyPlayer(spotifyId) {
       stopPlayback();
       const panel = document.getElementById('spotify-player');
-      const frame = document.getElementById('spotify-player-frame');
-      if (!panel || !frame) return;
-      frame.src = `https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0`;
+      if (!panel) return;
       panel.classList.remove('hidden');
+
+      const uri = `spotify:track:${spotifyId}`;
+      if (spotifyController) {
+        // loadUri + play dentro del mismo toque del usuario: arranca solo
+        spotifyController.loadUri(uri);
+        spotifyController.play();
+      } else {
+        // El reproductor todavía no cargó: lo dejamos pendiente para que
+        // arranque apenas esté listo.
+        spotifyPendingUri = uri;
+      }
     }
 
     function closeSpotifyPlayer() {
       const panel = document.getElementById('spotify-player');
-      const frame = document.getElementById('spotify-player-frame');
-      if (frame) frame.src = '';
+      if (spotifyController) {
+        try { spotifyController.pause(); } catch (e) {}
+      }
+      spotifyPendingUri = null;
       if (panel) panel.classList.add('hidden');
     }
 
@@ -4107,6 +4145,14 @@
       }
       playingTrackId = null;
     }
+
+    // Carga la API oficial del reproductor de Spotify (para el play automático)
+    (function loadSpotifyIframeApi() {
+      const s = document.createElement('script');
+      s.src = 'https://open.spotify.com/embed/iframe-api/v1';
+      s.async = true;
+      document.body.appendChild(s);
+    })();
   </script>
 
   <!-- INFORME DE INVITADOS: solo visible al imprimir / guardar como PDF -->
