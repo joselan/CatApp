@@ -739,16 +739,9 @@
     <!-- REPRODUCTOR EMBEBIDO DE SPOTIFY (completo con Premium; adelanto para el resto) -->
     <!-- Barra fija a todo el ancho, pegada abajo, con su propia sombra -->
     <div id="spotify-player" class="fixed left-0 right-0 bottom-0 z-40 w-full hidden" style="padding-bottom: env(safe-area-inset-bottom);">
-      <div class="relative">
-        <button onclick="closeSpotifyPlayer()" title="Cerrar reproductor" class="absolute -top-3 right-3 z-50 w-7 h-7 rounded-full bg-zinc-700 border border-zinc-500 text-white flex items-center justify-center shadow-xl active:scale-95">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        <!-- La API de Spotify reemplaza el div interno por el reproductor y permite el play automático -->
-        <div style="overflow:hidden; box-shadow:0 -8px 30px rgba(0,0,0,0.35);">
-          <div id="spotify-player-frame"></div>
-        </div>
+      <!-- La API de Spotify reemplaza el div interno por el reproductor y permite el play automático -->
+      <div style="overflow:hidden; box-shadow:0 -8px 30px rgba(0,0,0,0.35);">
+        <div id="spotify-player-frame"></div>
       </div>
     </div>
 
@@ -1017,6 +1010,7 @@
     // volver a tocar play dentro del reproductor.
     let spotifyController = null;
     let spotifyPendingUri = null;
+    let spotifyCurrentId = null;
 
     // Escapa texto externo (nombres de canciones, artistas o invitados) antes
     // de inyectarlo en plantillas HTML, para que comillas o símbolos < > & no
@@ -1373,6 +1367,8 @@
       updateSpotifyBannerUI();
       // Todos arrancan en la pantalla de votar / buscar canciones
       switchTab('search');
+      // La barra del reproductor queda siempre visible dentro de la app
+      showSpotifyPlayer();
       maybeShowTutorial();
     }
 
@@ -3089,6 +3085,9 @@
       // Sin sesión de invitado no hay vistas que renderizar (p. ej. tras cerrar sesión)
       if (!currentUser) return;
 
+      // Apenas hay canciones disponibles, dejamos una cargada en el reproductor
+      loadDefaultPlayerTrack();
+
       updateSpotifyBannerUI();
       updateVotingBanners();
       if (activeTab === 'soundtrack') {
@@ -4026,40 +4025,70 @@
       if (!element) return;
       IFrameAPI.createController(element, { width: '100%', height: 80, uri: '' }, (controller) => {
         spotifyController = controller;
-        // Si el usuario tocó play antes de que el reproductor estuviera listo,
-        // largamos esa canción ahora.
         if (spotifyPendingUri) {
-          controller.loadUri(spotifyPendingUri);
-          controller.play();
+          // El usuario tocó play antes de que el reproductor estuviera listo:
+          // cargamos esa canción y, si correspondía, la arrancamos.
+          controller.loadUri(spotifyPendingUri.uri);
+          if (spotifyPendingUri.play) controller.play();
+          spotifyCurrentId = spotifyPendingUri.id;
           spotifyPendingUri = null;
+        } else {
+          // Nadie tocó nada todavía: dejamos cargada una canción por defecto
+          // para que la barra no aparezca vacía.
+          loadDefaultPlayerTrack();
         }
       });
     };
 
+    // Carga (sin reproducir) la canción más votada que tenga Spotify, para
+    // que el reproductor muestre algo apenas se abre la pantalla.
+    function loadDefaultPlayerTrack() {
+      if (spotifyCurrentId) return; // ya hay una canción cargada
+      const candidate = [...songs]
+        .sort((a, b) => b.votes - a.votes)
+        .find(s => s.spotifyId || s.genre === 'Spotify');
+      if (!candidate) return;
+      const spotifyId = candidate.spotifyId || candidate.id;
+      const uri = `spotify:track:${spotifyId}`;
+      if (spotifyController) {
+        spotifyController.loadUri(uri);
+        spotifyCurrentId = spotifyId;
+      } else {
+        spotifyPendingUri = { uri, id: spotifyId, play: false };
+      }
+    }
+
+    // Muestra la barra del reproductor (siempre visible dentro de la app)
+    function showSpotifyPlayer() {
+      const panel = document.getElementById('spotify-player');
+      if (panel) panel.classList.remove('hidden');
+      loadDefaultPlayerTrack();
+    }
+
     function openSpotifyPlayer(spotifyId) {
       stopPlayback();
       const panel = document.getElementById('spotify-player');
-      if (!panel) return;
-      panel.classList.remove('hidden');
+      if (panel) panel.classList.remove('hidden');
 
       const uri = `spotify:track:${spotifyId}`;
       if (spotifyController) {
         // loadUri + play dentro del mismo toque del usuario: arranca solo
         spotifyController.loadUri(uri);
         spotifyController.play();
+        spotifyCurrentId = spotifyId;
       } else {
         // El reproductor todavía no cargó: lo dejamos pendiente para que
         // arranque apenas esté listo.
-        spotifyPendingUri = uri;
+        spotifyPendingUri = { uri, id: spotifyId, play: true };
       }
     }
 
+    // Oculta la barra (solo al salir de la sesión, en la pantalla de ingreso)
     function closeSpotifyPlayer() {
       const panel = document.getElementById('spotify-player');
       if (spotifyController) {
         try { spotifyController.pause(); } catch (e) {}
       }
-      spotifyPendingUri = null;
       if (panel) panel.classList.add('hidden');
     }
 
