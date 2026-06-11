@@ -54,14 +54,24 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Botones con borde bien definido en toda la app.
+    /* Botones que se reconocen a simple vista en toda la app:
+       borde negro definido + sombra dura abajo a la derecha (efecto tecla).
+       Al tocarlos, la sombra se achica como si se hundieran.
        Los elementos con la clase .sin-borde quedan exceptuados
        (p. ej. las pestañas de la barra de navegación). */
     button {
       border: 2px solid #18181b !important;
+      box-shadow: 3px 3px 0 #18181b !important;
+    }
+    button:active {
+      box-shadow: 1px 1px 0 #18181b !important;
+    }
+    button:disabled {
+      box-shadow: none !important;
     }
     .sin-borde {
       border: none !important;
+      box-shadow: none !important;
     }
 
     /* Tarjeta de acceso: blanca con borde bien definido */
@@ -352,7 +362,16 @@
        APLICACIÓN WEB PRINCIPAL (MÚSICA & PLAYLISTS)
        ========================================== -->
   <div id="app-screen" class="w-full max-w-lg px-4 hidden z-10 pt-4 animate-fadeIn">
-    
+
+    <!-- AVISO: ADMIN MIRANDO LA APP COMO INVITADO -->
+    <div id="guest-view-banner" class="hidden mb-4 p-3 rounded-2xl bg-amber-500/10 border-2 border-amber-600 flex items-center justify-between gap-3">
+      <p class="text-[11px] text-amber-800 font-bold leading-snug">👁 Estás viendo la app como invitado.</p>
+      <button onclick="toggleGuestView()"
+        class="px-3.5 py-2 rounded-xl bg-black text-white font-extrabold text-[9px] tracking-wider uppercase transition active:scale-95 shrink-0">
+        Volver a admin
+      </button>
+    </div>
+
     <!-- HEADER -->
     <header class="sticky top-0 z-30 py-4 bg-white/95 backdrop-blur-md border-b-2 border-zinc-900 mb-6 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
@@ -1201,6 +1220,9 @@
 
     function logout() {
       localStorage.removeItem('catapp_user');
+      // El modo invitado se apaga al salir: la próxima sesión arranca normal
+      viewingAsGuest = false;
+      localStorage.removeItem('catapp_modo_invitado');
       currentUser = null;
       showLogin();
     }
@@ -1212,8 +1234,29 @@
       closeSpotifyPlayer();
     }
 
-    function isAdmin() {
+    // ¿La sesión es de un admin de verdad (por código o por Google)?
+    function realAdmin() {
       return !!(currentUser && (currentUser.isAdmin === true || ADMIN_CODES.includes(currentUser.code)));
+    }
+
+    // Los admins pueden mirar la app exactamente como la ve un invitado
+    // (botón "Ver la app como invitado" en el Ranking). Mientras el modo
+    // invitado está activo, isAdmin() devuelve false y rigen las reglas
+    // normales (tope de votos, sin ranking, sin paneles de admin).
+    let viewingAsGuest = localStorage.getItem('catapp_modo_invitado') === '1';
+
+    function isAdmin() {
+      return realAdmin() && !viewingAsGuest;
+    }
+
+    function toggleGuestView() {
+      if (!realAdmin()) return;
+      viewingAsGuest = !viewingAsGuest;
+      localStorage.setItem('catapp_modo_invitado', viewingAsGuest ? '1' : '0');
+      showToast(viewingAsGuest
+        ? "Modo invitado: así ve CatApp un invitado."
+        : "Volviste al modo admin.", "info");
+      showApp();
     }
 
     // ==========================================
@@ -1340,6 +1383,10 @@
     function showApp() {
       document.getElementById('login-screen').classList.add('hidden');
       document.getElementById('app-screen').classList.remove('hidden');
+
+      // Aviso visible solo cuando un admin está mirando la app como invitado
+      document.getElementById('guest-view-banner')
+        .classList.toggle('hidden', !(realAdmin() && viewingAsGuest));
 
       document.getElementById('user-display-name').innerText = currentUser.name;
       document.getElementById('user-display-code').innerText =
@@ -2404,6 +2451,10 @@
           <button onclick="exportRankingToSpotify()"
             class="col-span-2 py-3 rounded-2xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95 shadow-lg">
             Exportar a Spotify
+          </button>
+          <button onclick="toggleGuestView()"
+            class="col-span-2 py-3 rounded-2xl bg-white text-black font-extrabold text-[10px] tracking-[0.15em] uppercase transition active:scale-95">
+            👁 Ver la app como invitado
           </button>
         </div>
 
