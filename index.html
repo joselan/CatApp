@@ -152,6 +152,13 @@
       50% { opacity: 0.75; transform: scale(1.15); }
     }
 
+    /* Tutorial paso a paso: el elemento explicado se ilumina con aro verde.
+       La posición/z-index se ajustan por JS para no romper elementos fijos. */
+    .tutorial-highlight {
+      box-shadow: 0 0 0 4px #22c55e, 0 0 26px 8px rgba(34, 197, 94, 0.55) !important;
+      border-radius: 22px;
+    }
+
     /* Informe de invitados: solo existe al imprimir / guardar como PDF */
     #print-report { display: none; }
     @media print {
@@ -497,7 +504,6 @@
       <!-- Qué hacer acá, dicho en una línea -->
       <div class="text-center px-2 pt-2">
         <h3 class="text-2xl font-extrabold text-zinc-900 leading-tight">¿Qué canciones no pueden faltar? 🎶</h3>
-        <p class="text-base text-zinc-500 mt-2">Buscá tus temas favoritos y votalos. Los más votados los pasa el DJ.</p>
       </div>
 
       <!-- Panel: conectar tu Spotify para ver tus más escuchadas -->
@@ -558,9 +564,6 @@
               🏆 Tus más escuchadas
               <span id="top-tracks-count" class="text-zinc-400 font-mono text-sm"></span>
             </h3>
-            <p class="text-base text-zinc-500 mt-1.5 leading-relaxed">
-              Tu ranking personal. Tocá el corazón para pedirlas en la fiesta.
-            </p>
           </div>
           <div class="p-1.5 bg-pink-50 rounded-full flex gap-1">
             <button id="btn-top-range-short_term" onclick="setTopTracksRange('short_term')"
@@ -672,7 +675,7 @@
     </div>
 
     <!-- NAV BAR FLOTANTE INFERIOR -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md bg-white/95 backdrop-blur-2xl px-3 py-2 rounded-full shadow-[0_10px_35px_rgba(190,24,93,0.18)] border border-pink-100 flex justify-around items-center gap-1">
+    <nav id="main-nav" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md bg-white/95 backdrop-blur-2xl px-3 py-2 rounded-full shadow-[0_10px_35px_rgba(190,24,93,0.18)] border border-pink-100 flex justify-around items-center gap-1">
       <button
         id="nav-soundtrack"
         onclick="switchTab('soundtrack')"
@@ -707,6 +710,31 @@
       </button>
     </nav>
 
+  </div>
+
+  <!-- ==========================================
+       INSTRUCTIVO PASO A PASO (primeras veces que entra cada usuario)
+       ========================================== -->
+  <div id="tutorial-backdrop" class="fixed inset-0 bg-black/75 z-[78] hidden"></div>
+  <div id="tutorial-pop" class="fixed left-1/2 -translate-x-1/2 w-[92%] max-w-md z-[90] hidden px-1">
+    <div class="bg-white rounded-3xl p-5 shadow-2xl border border-pink-100">
+      <div class="flex items-start justify-between gap-3">
+        <h3 id="tutorial-title" class="text-xl font-extrabold text-zinc-900 leading-tight"></h3>
+        <button onclick="dismissTutorial()" title="Cerrar" class="sin-borde text-zinc-400 text-3xl leading-none -mt-1 shrink-0">&times;</button>
+      </div>
+      <p id="tutorial-text" class="text-base text-zinc-600 mt-2 leading-relaxed"></p>
+      <div class="flex items-center justify-between mt-5 gap-3">
+        <div id="tutorial-dots" class="flex gap-1.5"></div>
+        <div class="flex gap-2">
+          <button id="tutorial-prev" onclick="tutorialPrev()" class="sin-borde px-4 py-2.5 rounded-full bg-zinc-100 text-zinc-600 font-bold text-sm">Anterior</button>
+          <button id="tutorial-next" onclick="tutorialNext()" class="sin-borde px-6 py-2.5 rounded-full btn-fiesta font-extrabold text-sm">Siguiente</button>
+        </div>
+      </div>
+      <label class="flex items-center gap-2 mt-4 text-sm text-zinc-500 cursor-pointer select-none">
+        <input type="checkbox" id="tutorial-dontshow" class="w-5 h-5 accent-pink-500" onchange="tutorialDontShowChanged(this.checked)">
+        No volver a mostrarme esto
+      </label>
+    </div>
   </div>
 
   <!-- ==========================================
@@ -1292,6 +1320,151 @@
 
       updateSpotifyBannerUI();
       switchTab(isAdmin() ? 'soundtrack' : 'search');
+      maybeShowTutorial();
+    }
+
+    // ==========================================
+    // INSTRUCTIVO PASO A PASO (ONBOARDING)
+    // Se muestra las primeras 5 veces que entra cada teléfono, o hasta que
+    // el usuario tilde "No volver a mostrarme esto".
+    // ==========================================
+    const TUTORIAL_STEPS = [
+      {
+        title: '🎶 ¡Bienvenido/a a los XV de Cata!',
+        text: 'Con esta app elegís la música de la fiesta. Te muestro en 4 pasitos cómo votar tus canciones. Tocá "Siguiente".',
+        target: null
+      },
+      {
+        title: '1. Buscá tu canción',
+        text: 'Escribí acá el nombre de una canción o de tu artista favorito.',
+        target: '#spotify-input'
+      },
+      {
+        title: '2. Votá con el corazón 💖',
+        text: 'Tocá el corazón de cada canción para votarla. Podés votar varias. ¡Las más votadas las pasa el DJ!',
+        target: '#search-results, #top-tracks-section, #spotify-search-panel'
+      },
+      {
+        title: '3. Tus más escuchadas',
+        text: 'Si tenés Spotify, conectá tu cuenta y votá directo desde las canciones que más escuchás.',
+        target: '#spotify-api-status-banner, #top-tracks-section'
+      },
+      {
+        title: '4. Moverte por la app',
+        text: 'Desde acá abajo cambiás entre Votar y Mi Espacio (donde ves todo lo que votaste). ¡Listo, a elegir música! 🪩',
+        target: '#main-nav'
+      }
+    ];
+
+    let tutorialIndex = 0;
+    let tutorialEl = null;
+    let tutorialShownThisLoad = false;
+
+    function maybeShowTutorial() {
+      if (tutorialShownThisLoad) return;
+      if (localStorage.getItem('catapp_tutorial_dismissed') === '1') return;
+      const count = parseInt(localStorage.getItem('catapp_tutorial_count') || '0', 10);
+      if (count >= 5) return;
+      tutorialShownThisLoad = true;
+      localStorage.setItem('catapp_tutorial_count', String(count + 1));
+      // Pequeña espera para que la pantalla termine de dibujarse
+      setTimeout(openTutorial, 650);
+    }
+
+    function openTutorial() {
+      if (!currentUser) return;
+      switchTab('search'); // el corazón de la app: buscar y votar
+      tutorialIndex = 0;
+      const chk = document.getElementById('tutorial-dontshow');
+      if (chk) chk.checked = false;
+      document.getElementById('tutorial-backdrop').classList.remove('hidden');
+      document.getElementById('tutorial-pop').classList.remove('hidden');
+      renderTutorialStep();
+    }
+
+    function clearTutorialHighlight() {
+      if (tutorialEl) {
+        tutorialEl.classList.remove('tutorial-highlight');
+        tutorialEl.style.zIndex = '';
+        if (tutorialEl.dataset.tutPos) { tutorialEl.style.position = ''; delete tutorialEl.dataset.tutPos; }
+        tutorialEl = null;
+      }
+    }
+
+    function resolveTutorialTarget(sel) {
+      if (!sel) return null;
+      for (const s of sel.split(',')) {
+        const el = document.querySelector(s.trim());
+        // Visible y con un alto razonable (evita resaltar secciones vacías)
+        if (el && el.offsetParent !== null && el.getBoundingClientRect().height > 12) return el;
+      }
+      return null;
+    }
+
+    function renderTutorialStep() {
+      const step = TUTORIAL_STEPS[tutorialIndex];
+      clearTutorialHighlight();
+
+      document.getElementById('tutorial-title').innerText = step.title;
+      document.getElementById('tutorial-text').innerText = step.text;
+      document.getElementById('tutorial-dots').innerHTML = TUTORIAL_STEPS.map((_, i) =>
+        `<span class="w-2.5 h-2.5 rounded-full ${i === tutorialIndex ? 'bg-fiesta' : 'bg-zinc-600'}"></span>`
+      ).join('');
+
+      const prevBtn = document.getElementById('tutorial-prev');
+      prevBtn.style.visibility = tutorialIndex === 0 ? 'hidden' : 'visible';
+      document.getElementById('tutorial-next').innerText =
+        tutorialIndex === TUTORIAL_STEPS.length - 1 ? 'Listo ✓' : 'Siguiente';
+
+      const pop = document.getElementById('tutorial-pop');
+      const el = resolveTutorialTarget(step.target);
+
+      if (el) {
+        el.classList.add('tutorial-highlight');
+        // El aro verde necesita z-index; si el elemento es estático, lo
+        // hacemos relativo temporalmente (sin tocar los elementos fijos).
+        if (getComputedStyle(el).position === 'static') { el.dataset.tutPos = '1'; el.style.position = 'relative'; }
+        el.style.zIndex = '80';
+        tutorialEl = el;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Ubica el cartel lejos del elemento resaltado
+        setTimeout(() => {
+          const r = el.getBoundingClientRect();
+          if (r.top > window.innerHeight * 0.5) {
+            pop.style.bottom = 'auto'; pop.style.top = '80px';
+          } else {
+            pop.style.top = 'auto'; pop.style.bottom = '110px';
+          }
+        }, 340);
+        pop.style.top = 'auto'; pop.style.bottom = '110px';
+      } else {
+        // Sin elemento: cartel centrado
+        pop.style.bottom = 'auto';
+        pop.style.top = Math.max(90, Math.round(window.innerHeight * 0.30)) + 'px';
+      }
+    }
+
+    function tutorialNext() {
+      if (tutorialIndex >= TUTORIAL_STEPS.length - 1) { closeTutorial(); return; }
+      tutorialIndex++;
+      renderTutorialStep();
+    }
+
+    function tutorialPrev() {
+      if (tutorialIndex > 0) { tutorialIndex--; renderTutorialStep(); }
+    }
+
+    function closeTutorial() {
+      clearTutorialHighlight();
+      document.getElementById('tutorial-backdrop').classList.add('hidden');
+      document.getElementById('tutorial-pop').classList.add('hidden');
+    }
+
+    function dismissTutorial() { closeTutorial(); }
+
+    function tutorialDontShowChanged(checked) {
+      localStorage.setItem('catapp_tutorial_dismissed', checked ? '1' : '0');
+      if (checked) setTimeout(closeTutorial, 250);
     }
 
     function dismissSpotifyTip() {
