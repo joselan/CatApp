@@ -655,6 +655,34 @@
             <!-- Top 100 personal de Spotify -->
           </div>
         </div>
+
+        <!-- Ranking de Argentina: lo más escuchado del país (curado) -->
+        <div id="arg-top-section" class="space-y-3">
+          <div>
+            <h3 class="text-2xl text-zinc-800 font-extrabold flex items-center gap-2">
+              🇦🇷 Top 100 Argentina
+              <span id="arg-top-count" class="text-zinc-400 font-mono text-sm"></span>
+            </h3>
+            <p class="text-[11px] text-zinc-500">Lo más escuchado del país.</p>
+          </div>
+          <div class="p-1.5 bg-pink-50 rounded-full flex gap-1">
+            <button id="btn-arg-range-short_term" onclick="setArgTopRange('short_term')"
+              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition bg-white text-fiestaDark shadow-sm whitespace-nowrap">
+              Último mes
+            </button>
+            <button id="btn-arg-range-medium_term" onclick="setArgTopRange('medium_term')"
+              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
+              6 meses
+            </button>
+            <button id="btn-arg-range-long_term" onclick="setArgTopRange('long_term')"
+              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
+              De siempre
+            </button>
+          </div>
+          <div id="arg-top-list" class="space-y-2.5">
+            <!-- Top de Argentina -->
+          </div>
+        </div>
       </div>
 
     </div>
@@ -977,6 +1005,125 @@
       }
     ];
 
+    // ==========================================
+    // TOP 100 ARGENTINA (CURADO)
+    // Spotify no publica un ranking de Argentina por período, así que armamos
+    // a mano la lista de lo más escuchado del país para cada ventana de tiempo.
+    // Cada tema se "resuelve" después contra Spotify (búsqueda real) para traer
+    // la tapa, el preview y poder pedirlo/votarlo igual que en el buscador.
+    // Para sumar o cambiar temas: editá título y artista y listo.
+    // ==========================================
+    const ARG_FALLBACK_COVERS = [
+      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80",
+      "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150&q=80",
+      "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=150&q=80",
+      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=150&q=80",
+      "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=150&q=80",
+      "https://images.unsplash.com/photo-1487180142328-0c4e37023af5?w=150&q=80"
+    ];
+
+    const ARG_TOP_TRACKS = {
+      // ÚLTIMO MES: hits del momento en Argentina
+      short_term: [
+        { title: "Hola Perdida", artist: "Luck Ra, BM", genre: "Cuarteto" },
+        { title: "Ojitos Rojos", artist: "FMK, Ke Personajes, Big One", genre: "Cuarteto" },
+        { title: "DtMF", artist: "Bad Bunny", genre: "Reggaeton" },
+        { title: "Baile Inolvidable", artist: "Bad Bunny", genre: "Salsa" },
+        { title: "Si Antes Te Hubiera Conocido", artist: "Karol G", genre: "Reggaeton" },
+        { title: "Ramen Para Dos", artist: "Maria Becerra", genre: "Pop Latino" },
+        { title: "No Se Ve", artist: "Emilia, Ludmilla, Zecca", genre: "Reggaeton" },
+        { title: "Rara Vez", artist: "Milo j", genre: "Trap" },
+        { title: "Que Me Falte Todo", artist: "Luck Ra, La K'onga", genre: "Cuarteto" },
+        { title: "Butakera", artist: "La Joaqui, Luck Ra", genre: "Cuarteto" },
+        { title: "Constelación", artist: "Duki", genre: "Trap" },
+        { title: "Luna", artist: "Feid, ATL Jacob", genre: "Reggaeton" },
+        { title: "Mírame", artist: "Nicki Nicole, Milo j", genre: "Pop Latino" },
+        { title: "Tu Con El", artist: "Rauw Alejandro", genre: "Reggaeton" },
+        { title: "Quevedo: Bzrp Music Sessions, Vol. 52", artist: "Bizarrap, Quevedo", genre: "Trap" },
+        { title: "Nuevayol", artist: "Bad Bunny", genre: "Reggaeton" },
+        { title: "Brindis", artist: "L-Gante", genre: "Cumbia 420" },
+        { title: "La Falda", artist: "Myke Towers", genre: "Reggaeton" },
+        { title: "Gran Via", artist: "Quevedo", genre: "Reggaeton" },
+        { title: "Una Foto Remix", artist: "Mesita, Emilia, Nicki Nicole, Tiago PZK", genre: "Pop Latino" },
+        { title: "Cómo Dormiste?", artist: "Rels B", genre: "Reggaeton" },
+        { title: "Lisa", artist: "Young Miko", genre: "Trap" },
+        { title: "El Cielo", artist: "Tiago PZK, Nicki Nicole", genre: "Pop Latino" },
+        { title: "Soltera", artist: "Shakira", genre: "Reggaeton" },
+        { title: "Mi Bombon", artist: "Callejero Fino", genre: "RKT" },
+        { title: "Cupido", artist: "Tini", genre: "Pop Latino" },
+        { title: "Verano Sin Ti", artist: "FMK, Estani", genre: "Reggaeton" },
+        { title: "Veneno", artist: "Ke Personajes", genre: "Cumbia" },
+        { title: "11:11", artist: "Milo j", genre: "Trap" },
+        { title: "Automatico", artist: "Maria Becerra", genre: "Pop Latino" }
+      ],
+      // ÚLTIMOS 6 MESES: lo que más sonó el semestre
+      medium_term: [
+        { title: "Shakira: Bzrp Music Sessions, Vol. 53", artist: "Bizarrap, Shakira", genre: "Pop Latino" },
+        { title: "Los del Espacio", artist: "LIT Killah, Duki, Emilia, Maria Becerra, Tiago PZK, FMK, Rusherking, Big One", genre: "Reggaeton" },
+        { title: "Quevedo: Bzrp Music Sessions, Vol. 52", artist: "Bizarrap, Quevedo", genre: "Trap" },
+        { title: "Classy 101", artist: "Feid, Young Miko", genre: "Reggaeton" },
+        { title: "La Triple T", artist: "Tini", genre: "Pop Latino" },
+        { title: "Hola Perdida", artist: "Luck Ra, BM", genre: "Cuarteto" },
+        { title: "TQG", artist: "Karol G, Shakira", genre: "Reggaeton" },
+        { title: "Ella Baila Sola", artist: "Eslabon Armado, Peso Pluma", genre: "Corridos" },
+        { title: "Monaco", artist: "Bad Bunny", genre: "Trap" },
+        { title: "Beso", artist: "Rosalía, Rauw Alejandro", genre: "Reggaeton" },
+        { title: "GUERRERO", artist: "Emilia", genre: "Pop Latino" },
+        { title: "La Bachata", artist: "Manuel Turizo", genre: "Bachata" },
+        { title: "Que Me Falte Todo", artist: "Luck Ra, La K'onga", genre: "Cuarteto" },
+        { title: "Tu Turrita", artist: "La Joaqui, Luck Ra", genre: "RKT" },
+        { title: "Givenchy", artist: "Duki", genre: "Trap" },
+        { title: "Mi Ex Tenía Razón", artist: "Karol G", genre: "Reggaeton" },
+        { title: "Where She Goes", artist: "Bad Bunny", genre: "Reggaeton" },
+        { title: "LALA", artist: "Myke Towers", genre: "Reggaeton" },
+        { title: "Una Foto Remix", artist: "Mesita, Emilia, Nicki Nicole, Tiago PZK", genre: "Pop Latino" },
+        { title: "Perro Negro", artist: "Bad Bunny, Feid", genre: "Reggaeton" },
+        { title: "Peso Pluma: Bzrp Music Sessions, Vol. 55", artist: "Bizarrap, Peso Pluma", genre: "Corridos" },
+        { title: "Las Babys", artist: "Aitana", genre: "Pop" },
+        { title: "Columbia", artist: "Quevedo", genre: "Reggaeton" },
+        { title: "Coqueta", artist: "Rusherking, Tiago PZK", genre: "Pop Latino" },
+        { title: "Frente al Mar", artist: "Tini, Mau y Ricky", genre: "Pop Latino" },
+        { title: "Ojos Verdes", artist: "Nicki Nicole, Big One", genre: "Pop Latino" },
+        { title: "El Merengue", artist: "Marshmello, Manuel Turizo", genre: "Merengue" },
+        { title: "Mientras Me Curo del Cora", artist: "Karol G", genre: "Pop Latino" },
+        { title: "Un Veneno", artist: "Ke Personajes", genre: "Cumbia" },
+        { title: "Cupido", artist: "Tini", genre: "Pop Latino" }
+      ],
+      // DE SIEMPRE: los clásicos eternos de Argentina
+      long_term: [
+        { title: "De Música Ligera", artist: "Soda Stereo", genre: "Rock Nacional" },
+        { title: "Crimen", artist: "Gustavo Cerati", genre: "Rock Nacional" },
+        { title: "El Amor Después del Amor", artist: "Fito Páez", genre: "Rock Nacional" },
+        { title: "Matador", artist: "Los Fabulosos Cadillacs", genre: "Ska" },
+        { title: "Persiana Americana", artist: "Soda Stereo", genre: "Rock Nacional" },
+        { title: "Ji Ji Ji", artist: "Patricio Rey y sus Redonditos de Ricota", genre: "Rock Nacional" },
+        { title: "Flaca", artist: "Andrés Calamaro", genre: "Rock Nacional" },
+        { title: "Muchacha (Ojos de Papel)", artist: "Luis Alberto Spinetta", genre: "Rock Nacional" },
+        { title: "Demoliendo Hoteles", artist: "Charly García", genre: "Rock Nacional" },
+        { title: "La Rubia Tarada", artist: "Sumo", genre: "Rock Nacional" },
+        { title: "Vasos Vacíos", artist: "Los Fabulosos Cadillacs, Celia Cruz", genre: "Salsa" },
+        { title: "Panic Show", artist: "La Renga", genre: "Rock Nacional" },
+        { title: "Cuando Pase el Temblor", artist: "Soda Stereo", genre: "Rock Nacional" },
+        { title: "Loco (Tu Forma de Ser)", artist: "Los Auténticos Decadentes", genre: "Ska" },
+        { title: "La Argentinidad al Palo", artist: "Bersuit Vergarabat", genre: "Rock Nacional" },
+        { title: "Seminare", artist: "Serú Girán", genre: "Rock Nacional" },
+        { title: "Tan Solo", artist: "Los Piojos", genre: "Rock Nacional" },
+        { title: "El Temblor", artist: "Soda Stereo", genre: "Rock Nacional" },
+        { title: "Mil Horas", artist: "Los Abuelos de la Nada", genre: "Rock Nacional" },
+        { title: "Rezo por Vos", artist: "Charly García, Luis Alberto Spinetta", genre: "Rock Nacional" },
+        { title: "Zamba de Mi Esperanza", artist: "Los Nocheros", genre: "Folklore" },
+        { title: "El Aguante", artist: "Bersuit Vergarabat", genre: "Rock Nacional" },
+        { title: "Hacelo por Mí", artist: "Attaque 77", genre: "Punk" },
+        { title: "Ciudad Mágica", artist: "Tan Biónica", genre: "Pop Rock" },
+        { title: "La Melodía", artist: "Tan Biónica", genre: "Pop Rock" },
+        { title: "Don", artist: "Miranda!", genre: "Pop" },
+        { title: "Putita", artist: "Babasónicos", genre: "Rock Nacional" },
+        { title: "Honestidad Brutal", artist: "Andrés Calamaro", genre: "Rock Nacional" },
+        { title: "Spaghetti del Rock", artist: "Divididos", genre: "Rock Nacional" },
+        { title: "Una Nueva Noche Fría", artist: "Callejeros", genre: "Rock Nacional" }
+      ]
+    };
+
     // Variables de Estado de la Sesión
     let currentUser = null;
     let songs = [];
@@ -994,6 +1141,11 @@
     let topTracksRange = 'medium_term'; // último mes | últimos 6 meses | de siempre
     let topTracksPromises = {};         // pedidos en curso (evita pedir dos veces lo mismo)
     let topTracksByRange = {};          // resultados listos para dibujar, por período
+
+    // Ranking de Argentina "Top 100 Argentina" (lo más escuchado del país, curado)
+    let argTopRange = 'short_term';     // último mes por defecto
+    let argTopPromises = {};            // pedidos en curso por período
+    let argTopByRange = {};             // tracks resueltos por período
 
     // Cliente de Supabase (null = modo local en este teléfono)
     let sb = null;
@@ -1703,6 +1855,9 @@
         showToast("¡CatApp conectada exitosamente a Spotify Real!", "success");
         fetchSpotifyProfile();
         updateSpotifyBannerUI();
+        // Ya con cuenta: rearmamos el top de Argentina para traer tapas reales
+        argTopPromises = {};
+        argTopByRange = {};
         // Recién conectado: derecho a su ranking de más escuchadas para ir eligiendo
         if (currentUser) switchTab('search');
       } catch (err) {
@@ -1745,6 +1900,9 @@
       // El ranking personal era de esa cuenta: se descarta y se oculta
       topTracksPromises = {};
       topTracksByRange = {};
+      // El top de Argentina se resolvió con esa cuenta: se rearma sin ella
+      argTopPromises = {};
+      argTopByRange = {};
       const topSection = document.getElementById('top-tracks-section');
       if (topSection) topSection.classList.add('hidden');
       updateSpotifyBannerUI();
@@ -1985,6 +2143,184 @@
 
     async function addSongFromTop(index) {
       const track = (topTracksByRange[topTracksRange] || [])[index];
+      if (!track) return;
+
+      const result = await addSongRecord(track);
+      if (result === 'added') {
+        showToast(`"${track.title}" pedida y votada. ¡El DJ la tendrá en cuenta!`, "success");
+      } else if (result === 'voted') {
+        showToast(`¡Le sumaste tu voto a "${track.title}"!`, "success");
+      }
+      if (result) {
+        renderAll();
+        openDedicationModal(songs.find(s => s.title.toLowerCase() === track.title.toLowerCase()));
+      }
+    }
+
+    // ==========================================
+    // TOP 100 ARGENTINA (RESOLUCIÓN Y RENDER)
+    // La lista curada (ARG_TOP_TRACKS) se "resuelve" contra Spotify para traer
+    // tapa/preview reales. Si no hay forma de buscar (modo local sin servidor),
+    // mostramos el tema igual con una tapa de respaldo.
+    // ==========================================
+
+    // Ejecuta una tarea sobre una lista con un tope de pedidos en paralelo,
+    // para no saturar a Spotify cuando resolvemos decenas de temas a la vez.
+    async function mapWithConcurrency(items, limit, fn) {
+      const results = new Array(items.length);
+      let cursor = 0;
+      async function worker() {
+        while (cursor < items.length) {
+          const idx = cursor++;
+          results[idx] = await fn(items[idx], idx);
+        }
+      }
+      const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+      await Promise.all(workers);
+      return results;
+    }
+
+    // Convierte un tema curado (título + artista) en un track real de Spotify.
+    // Si la búsqueda no está disponible o falla, devuelve un track de respaldo.
+    async function resolveArgTrack(entry, idx, range) {
+      try {
+        const matches = await searchSpotifyCatalog(`${entry.title} ${entry.artist}`);
+        if (matches && matches.length) {
+          return { ...matches[0], genre: entry.genre || matches[0].genre };
+        }
+      } catch (err) {
+        // Sin conexión/servidor: caemos al respaldo de abajo
+      }
+      return {
+        id: `arg-${range}-${idx}`,
+        title: entry.title,
+        artist: entry.artist,
+        album: 'Top Argentina',
+        coverUrl: ARG_FALLBACK_COVERS[idx % ARG_FALLBACK_COVERS.length],
+        previewUrl: null,
+        genre: entry.genre || 'Argentina'
+      };
+    }
+
+    function getArgTop(range) {
+      if (!argTopPromises[range]) {
+        argTopPromises[range] = (async () => {
+          const entries = ARG_TOP_TRACKS[range] || [];
+          const resolved = await mapWithConcurrency(entries, 6, (entry, idx) => resolveArgTrack(entry, idx, range));
+          return resolved.filter(Boolean);
+        })().catch(err => {
+          delete argTopPromises[range]; // permite reintentar más tarde
+          throw err;
+        });
+      }
+      return argTopPromises[range];
+    }
+
+    function setArgTopRange(range) {
+      argTopRange = range;
+      renderArgTop();
+    }
+
+    async function renderArgTop() {
+      const section = document.getElementById('arg-top-section');
+      const list = document.getElementById('arg-top-list');
+      const counter = document.getElementById('arg-top-count');
+      if (!section || !list || !currentUser) return;
+      section.classList.remove('hidden');
+
+      // Estado visual de las solapas de período
+      ['short_term', 'medium_term', 'long_term'].forEach(r => {
+        const btn = document.getElementById(`btn-arg-range-${r}`);
+        if (btn) {
+          btn.className = r === argTopRange
+            ? "sin-borde flex-1 text-center py-3 text-xl font-bold rounded-full transition bg-white text-fiestaDark shadow-sm whitespace-nowrap"
+            : "sin-borde flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap";
+        }
+      });
+
+      const range = argTopRange;
+      if (!argTopByRange[range]) {
+        if (counter) counter.innerText = '';
+        list.innerHTML = `<div class="p-6 text-center text-zinc-500 text-xs animate-pulse">Cargando el top de Argentina… 🇦🇷</div>`;
+        try {
+          argTopByRange[range] = await getArgTop(range);
+        } catch (err) {
+          if (range !== argTopRange) return; // cambió el período mientras cargaba
+          console.error("Error al traer el top de Argentina:", err);
+          list.innerHTML = `
+            <div class="p-5 text-center bg-zinc-50/80 rounded-2xl border-2 border-zinc-400 space-y-2.5">
+              <p class="text-[11px] text-zinc-600">No se pudo cargar el top de Argentina.</p>
+              <button onclick="renderArgTop()"
+                class="px-4 py-2 rounded-xl bg-black text-white font-extrabold text-[10px] tracking-wide transition active:scale-95">
+                REINTENTAR
+              </button>
+            </div>`;
+          return;
+        }
+      }
+
+      if (range !== argTopRange) return; // cambió el período mientras cargaba
+
+      const tracks = argTopByRange[range];
+      if (counter) counter.innerText = tracks.length ? `· Top ${tracks.length}` : '';
+
+      if (tracks.length === 0) {
+        list.innerHTML = `
+          <div class="p-6 text-center bg-zinc-100/10 rounded-2xl border-2 border-pink-200 border-dashed">
+            <p class="text-xs text-zinc-500 font-serif">Por ahora no hay temas para este período.</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = tracks.map((track, index) => {
+        // Mismas reglas que el buscador: si ya está pedida se suma el voto,
+        // y si ya la votaste queda tildada
+        const existing = songs.find(s =>
+          s.title.toLowerCase() === track.title.toLowerCase() ||
+          (s.spotifyId && s.spotifyId === track.id)
+        );
+        const votedByMe = !!(existing && existing.voters && existing.voters.includes(currentUser.id));
+
+        const icon = votedByMe
+          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />'
+          : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />';
+
+        return `
+          <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition animate-fadeIn">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <span class="w-11 text-center text-3xl font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
+              <div class="relative w-20 h-20 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
+                <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
+                <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+                  <svg class="w-8 h-8 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="min-w-0">
+                <h4 class="text-3xl font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(track.title)}</h4>
+                <p class="text-2xl text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+                ${votedByMe ? '<p class="text-lg text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
+              </div>
+            </div>
+
+            <button
+              onclick="addSongFromArgTop(${index})"
+              ${votedByMe ? 'disabled' : ''}
+              title="${votedByMe ? 'Ya la votaste' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
+              class="w-16 h-16 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
+            >
+              <svg class="w-8 h-8 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                ${icon}
+              </svg>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function addSongFromArgTop(index) {
+      const track = (argTopByRange[argTopRange] || [])[index];
       if (!track) return;
 
       const result = await addSongRecord(track);
@@ -3095,6 +3431,7 @@
       } else if (activeTab === 'search') {
         searchSpotify();
         renderTopTracks();
+        renderArgTop();
       } else if (activeTab === 'profile') {
         renderProfile();
       }
