@@ -518,26 +518,26 @@
             </svg>
           </button>
 
-          <div id="header-menu" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-pink-100 overflow-hidden z-[60] animate-fadeIn">
+          <div id="header-menu" class="hidden absolute right-0 mt-2 w-80 max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-pink-100 overflow-hidden z-[60] animate-fadeIn">
             <button id="menu-soundtrack" onclick="menuGo('soundtrack')"
-              class="sin-borde w-full text-left px-4 py-3.5 text-sm font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-3 transition">
-              <span class="text-lg">🏆</span> Ranking de votos
+              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition">
+              <span class="text-3xl">🏆</span> Ranking de votos
             </button>
             <button id="menu-search" onclick="menuGo('search')"
-              class="sin-borde w-full text-left px-4 py-3.5 text-sm font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-3 transition border-t border-pink-50">
-              <span class="text-lg">🎶</span> <span id="menu-search-label">Votar canciones</span>
+              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-3xl">🎶</span> <span id="menu-search-label">Votar canciones</span>
             </button>
             <button onclick="menuGo('profile-top')"
-              class="sin-borde w-full text-left px-4 py-3.5 text-sm font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-3 transition border-t border-pink-50">
-              <span class="text-lg">👤</span> Mi perfil
+              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-3xl">👤</span> Mi perfil
             </button>
             <button onclick="menuGo('profile-votes')"
-              class="sin-borde w-full text-left px-4 py-3.5 text-sm font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-3 transition border-t border-pink-50">
-              <span class="text-lg">💖</span> Canciones votadas
+              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-3xl">💖</span> Canciones votadas
             </button>
             <button onclick="logout()"
-              class="sin-borde w-full text-left px-4 py-3.5 text-sm font-bold text-pink-500 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-3 transition border-t border-pink-100">
-              <span class="text-lg">🚪</span> Salir de sesión
+              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-pink-500 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-100">
+              <span class="text-3xl">🚪</span> Salir de sesión
             </button>
           </div>
         </div>
@@ -575,7 +575,7 @@
 
       <!-- Qué hacer acá, dicho en una línea -->
       <div class="text-center px-2 pt-2">
-        <h3 class="text-2xl font-extrabold text-zinc-900 leading-tight">¿Qué canciones no pueden faltar? 🎶</h3>
+        <h3 class="text-4xl font-extrabold text-zinc-900 leading-tight">¿Qué canciones no pueden faltar? 🎶</h3>
       </div>
 
       <!-- Panel: conectar tu Spotify para ver tus más escuchadas -->
@@ -612,7 +612,7 @@
       <div id="spotify-search-panel" class="space-y-4">
         <div class="relative">
           <span class="absolute inset-y-0 left-0 pl-5 flex items-center text-pink-400">
-            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </span>
@@ -620,8 +620,8 @@
             type="text"
             id="spotify-input"
             oninput="searchSpotify()"
-            placeholder="Buscá una canción o artista…"
-            class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-full py-5 pl-14 pr-5 text-lg text-black placeholder-zinc-400 outline-none transition-all duration-300 shadow-sm"
+            placeholder="Buscá una canción…"
+            class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-full py-6 pl-16 pr-5 text-2xl text-black placeholder-zinc-400 outline-none transition-all duration-300 shadow-sm"
           />
         </div>
 
@@ -632,22 +632,22 @@
         <!-- Ranking personal: las más escuchadas de la cuenta de Spotify conectada -->
         <div id="top-tracks-section" class="space-y-3 hidden">
           <div>
-            <h3 class="text-2xl text-zinc-800 font-extrabold flex items-center gap-2">
+            <h3 class="text-4xl text-zinc-800 font-extrabold flex items-center gap-2 flex-wrap">
               🏆 Tus más escuchadas
-              <span id="top-tracks-count" class="text-zinc-400 font-mono text-sm"></span>
+              <span id="top-tracks-count" class="text-zinc-400 font-mono text-lg"></span>
             </h3>
           </div>
           <div class="p-1.5 bg-pink-50 rounded-full flex gap-1">
             <button id="btn-top-range-short_term" onclick="setTopTracksRange('short_term')"
-              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
+              class="flex-1 text-center py-4 text-2xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
               Último mes
             </button>
             <button id="btn-top-range-medium_term" onclick="setTopTracksRange('medium_term')"
-              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition bg-zinc-100 text-black whitespace-nowrap">
+              class="flex-1 text-center py-4 text-2xl font-bold rounded-full transition bg-zinc-100 text-black whitespace-nowrap">
               6 meses
             </button>
             <button id="btn-top-range-long_term" onclick="setTopTracksRange('long_term')"
-              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
+              class="flex-1 text-center py-4 text-2xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
               De siempre
             </button>
           </div>
