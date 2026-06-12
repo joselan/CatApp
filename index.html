@@ -80,6 +80,18 @@
       box-shadow: none !important;
     }
 
+    /* Reproductor de Spotify: forzamos el formato Grande (352px de alto),
+       igual que el ejemplo "Grande" de la prueba, pase lo que pase. */
+    #spotify-player-frame,
+    #spotify-player iframe {
+      height: 352px !important;
+      min-height: 352px !important;
+      width: 100% !important;
+      border: 0 !important;
+      border-radius: 14px;
+      display: block;
+    }
+
     /* Botón principal de la fiesta: degradado rosa → violeta con glow neón */
     .btn-fiesta {
       background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
