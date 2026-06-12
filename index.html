@@ -192,7 +192,7 @@
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center overflow-x-hidden relative" style="padding-bottom: calc(10vh + 190px + env(safe-area-inset-bottom));">
+<body class="min-h-screen flex flex-col items-center overflow-x-hidden relative" style="padding-bottom: calc(15vh + 380px + env(safe-area-inset-bottom));">
   <!-- Aplica el tema (claro/oscuro) apenas carga, según preferencia guardada o el sistema -->
   <script>
     (function () {
@@ -766,7 +766,7 @@
 
     <!-- REPRODUCTOR EMBEBIDO DE SPOTIFY (completo con Premium; adelanto para el resto) -->
     <!-- Barra fija a todo el ancho, pegada abajo, con su propia sombra -->
-    <div id="spotify-player" class="fixed left-0 right-0 z-40 w-full hidden" style="bottom: calc(10vh + env(safe-area-inset-bottom));">
+    <div id="spotify-player" class="fixed left-0 right-0 z-40 w-full hidden" style="bottom: calc(15vh + env(safe-area-inset-bottom));">
       <!-- La API de Spotify reemplaza el div interno por el reproductor y permite el play automático -->
       <div style="overflow:hidden; box-shadow:0 -8px 30px rgba(0,0,0,0.35);">
         <div id="spotify-player-frame"></div>
@@ -4416,7 +4416,7 @@
     window.onSpotifyIframeApiReady = (IFrameAPI) => {
       const element = document.getElementById('spotify-player-frame');
       if (!element) return;
-      IFrameAPI.createController(element, { width: '100%', height: 160, uri: '' }, (controller) => {
+      IFrameAPI.createController(element, { width: '100%', height: 352, uri: '' }, (controller) => {
         spotifyController = controller;
         if (spotifyPendingUri) {
           // El usuario tocó play antes de que el reproductor estuviera listo:
