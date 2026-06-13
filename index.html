@@ -62,8 +62,11 @@
     /* TEMA OSCURO: cabina de DJ, negro con halo violeta/rosa */
     body.theme-dark {
       background:
-        radial-gradient(120% 70% at 50% -10%, rgba(168,85,247,0.18) 0%, rgba(236,72,153,0.10) 35%, rgba(0,0,0,0) 70%),
-        #08080c;
+        /* halo neón violeta/rosa de la cabina, arriba */
+        radial-gradient(120% 70% at 50% -10%, rgba(168,85,247,0.20) 0%, rgba(236,72,153,0.10) 35%, rgba(0,0,0,0) 70%),
+        /* superficie de grafito de la consola (de arriba clara a abajo profunda) */
+        linear-gradient(180deg, #101018 0%, #0a0a10 45%, #060609 100%),
+        #060609;
       background-attachment: fixed;
       color: #f4f4f5;
     }
@@ -106,9 +109,9 @@
       box-shadow: 0 4px 16px rgba(190, 24, 93, 0.08);
     }
     body.theme-dark .card-fiesta {
-      background: #161620;
-      border: 1px solid rgba(168, 85, 247, 0.10);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      background: linear-gradient(180deg, #1a1a24 0%, #131319 100%);
+      border: 1px solid rgba(168, 85, 247, 0.12);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     /* Tarjeta de acceso */
@@ -202,6 +205,126 @@
       #print-report h2 { font-size: 13px; margin: 14px 0 2px; }
       #print-report p { font-size: 10px; margin: 2px 0; color: #444; }
     }
+
+    /* ==========================================================
+       FONDO "BANDEJA DE DJ" — estética minimalista de cabina
+       Capa decorativa fija detrás de todo (no interfiere con el
+       contenido, z-index 0, sin captura de toques). Solo se ve en
+       el tema oscuro, que es la cabina. Dos platos giradiscos muy
+       sutiles que giran lento + una consola/mixer apenas insinuada.
+       ========================================================== */
+    #dj-deck-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    body.theme-dark #dj-deck-bg { opacity: 1; }
+
+    /* Plato giradiscos: surcos de vinilo concéntricos + etiqueta central */
+    .dj-platter {
+      position: absolute;
+      width: 78vw;
+      max-width: 520px;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      background:
+        /* brillo de la etiqueta central (rosa→violeta) */
+        radial-gradient(circle at 50% 50%, rgba(236,72,153,0.20) 0 8.5%, rgba(168,85,247,0.10) 8.5% 12%, rgba(0,0,0,0) 12.4% 100%),
+        /* surcos finísimos del vinilo */
+        repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0 1px, rgba(0,0,0,0) 1px 5px),
+        /* cuerpo del disco */
+        radial-gradient(circle at 50% 50%, #15151d 0%, #0b0b11 70%);
+      box-shadow: 0 0 80px rgba(168,85,247,0.10);
+      opacity: 0.55;
+    }
+    /* Eje central (spindle) del plato */
+    .dj-platter::after {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 2.5%; height: 2.5%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, #f9a8d4 0%, #a855f7 100%);
+      box-shadow: 0 0 12px rgba(236,72,153,0.6);
+    }
+    .dj-platter.left  { top: -16vw;  left: -24vw;  animation: djSpin 38s linear infinite; }
+    .dj-platter.right { bottom: -20vw; right: -22vw; animation: djSpin 46s linear infinite reverse; }
+
+    @keyframes djSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* Consola / mixer: faders y perillas apenas insinuados en la base */
+    .dj-mixer {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 560px;
+      height: 120px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 14px;
+      padding: 0 18px 16px;
+      opacity: 0.4;
+      -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 100%);
+              mask-image: linear-gradient(to top, #000 0%, transparent 100%);
+    }
+    /* Cada canal del mixer: una línea de fader vertical con su perilla */
+    .dj-fader {
+      position: relative;
+      width: 2px;
+      height: 84px;
+      border-radius: 2px;
+      background: linear-gradient(to top, rgba(255,255,255,0.16), rgba(255,255,255,0.04));
+    }
+    .dj-fader::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      width: 16px;
+      height: 7px;
+      transform: translateX(-50%);
+      border-radius: 3px;
+      background: linear-gradient(180deg, #2a2a36, #16161e);
+      box-shadow: 0 0 8px rgba(168,85,247,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+    /* La perilla de cada fader queda a distinta altura, como en una mesa real */
+    .dj-fader:nth-child(1)::before { top: 14%; }
+    .dj-fader:nth-child(2)::before { top: 46%; }
+    .dj-fader:nth-child(3)::before { top: 28%; }
+    .dj-fader:nth-child(4)::before { top: 58%; }
+    .dj-fader:nth-child(5)::before { top: 22%; }
+    .dj-fader:nth-child(6)::before { top: 50%; }
+    .dj-fader:nth-child(7)::before { top: 34%; }
+    /* Línea de LEDs encendidos (crossfader) que cruza la consola */
+    .dj-mixer::after {
+      content: "";
+      position: absolute;
+      bottom: 16px;
+      left: 18px; right: 18px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(236,72,153,0.5) 20%, rgba(168,85,247,0.5) 80%, transparent);
+    }
+
+    /* En teléfonos chicos achicamos un toque la consola para que no compita */
+    @media (max-width: 420px) {
+      .dj-mixer { height: 96px; gap: 10px; }
+      .dj-fader { height: 66px; }
+    }
+
+    /* Respeto por quien prefiere menos movimiento: los platos quedan quietos */
+    @media (prefers-reduced-motion: reduce) {
+      .dj-platter.left, .dj-platter.right { animation: none; }
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center overflow-x-hidden relative" style="padding-bottom: calc(15vh + 380px + env(safe-area-inset-bottom));">
@@ -210,13 +333,30 @@
     (function () {
       try {
         var s = localStorage.getItem('catapp_theme');
-        var dark = s ? s === 'dark' : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        // La cabina de DJ (tema oscuro) es la estética por defecto; solo se ve
+        // claro si el usuario lo eligió a mano alguna vez.
+        var dark = s ? s === 'dark' : true;
         document.body.classList.add(dark ? 'theme-dark' : 'theme-light');
       } catch (e) { document.body.classList.add('theme-dark'); }
     })();
   </script>
 
-  <!-- Fondo blanco puro y limpio: sin luces ni estrellas decorativas (look minimalista) -->
+  <!-- FONDO "BANDEJA DE DJ" (minimalista): dos platos giradiscos que giran
+       lento y una consola/mixer apenas insinuada. Es puramente decorativo,
+       vive detrás de todo y solo se ve en el tema oscuro (la cabina). -->
+  <div id="dj-deck-bg" aria-hidden="true">
+    <div class="dj-platter left"></div>
+    <div class="dj-platter right"></div>
+    <div class="dj-mixer">
+      <div class="dj-fader"></div>
+      <div class="dj-fader"></div>
+      <div class="dj-fader"></div>
+      <div class="dj-fader"></div>
+      <div class="dj-fader"></div>
+      <div class="dj-fader"></div>
+      <div class="dj-fader"></div>
+    </div>
+  </div>
 
   <!-- CONTENEDOR DE ALERTAS TOASTS -->
   <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm pointer-events-none"></div>
@@ -1802,7 +1942,8 @@
     function getPreferredTheme() {
       const saved = localStorage.getItem('catapp_theme');
       if (saved === 'light' || saved === 'dark') return saved;
-      return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      // Sin elección previa: arrancamos en la cabina de DJ (tema oscuro).
+      return 'dark';
     }
 
     function applyTheme(theme) {
