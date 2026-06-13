@@ -42,8 +42,9 @@ Para que Google lo permita hay que crear una credencial gratuita (un
 2. Tipo de aplicación: **Aplicación web**. Nombre: `CatApp Web`.
 3. En **Orígenes de JavaScript autorizados** agregá exactamente:
    ```
-   https://joselan.github.io
+   https://cat-app-nu.vercel.app
    ```
+   (Acá va SIN la barra final, así lo pide Google para los orígenes.)
 4. **Crear** → copiá el **ID de cliente** (una tira larga que termina en
    `.apps.googleusercontent.com`).
 
@@ -51,6 +52,8 @@ Para que Google lo permita hay que crear una credencial gratuita (un
 
 Pasale a Claude el ID de cliente (o pegalo vos en `index.html`, en la
 constante `GOOGLE_CLIENT_ID`) y publicá. ¡Listo!
+
+> 💡 La web vive en Vercel (https://cat-app-nu.vercel.app/) y se actualiza sola cada vez que se sube un cambio a la rama `main`.
 
 ---
 

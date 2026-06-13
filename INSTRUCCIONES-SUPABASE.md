@@ -61,6 +61,8 @@ como secreto del servidor.
    (o pasáselos a Claude y los configura por vos)
 3. Subí el cambio a GitHub (rama `main`) y listo.
 
+> 💡 **Dónde vive la web:** CatApp está publicada en Vercel (https://cat-app-nu.vercel.app/). No hay que "subir" nada a mano: cada vez que se sube un cambio a la rama `main`, Vercel republica la web sola en unos segundos.
+
 ---
 
 ## ¿Cómo sé que funcionó?

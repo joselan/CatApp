@@ -865,8 +865,9 @@
     // ==========================================
     // Para que la conexión real funcione necesitas registrar la app:
     //   1. Entra a https://developer.spotify.com/dashboard y crea una app.
-    //   2. En "Redirect URIs" agrega la URL EXACTA donde está publicada CatApp,
-    //      por ejemplo: https://tuusuario.github.io/CatApp/index.html
+    //   2. En "Redirect URIs" agrega la URL EXACTA donde está publicada CatApp.
+    //      CatApp vive en Vercel, así que agregá exactamente (con la barra final):
+    //          https://cat-app-nu.vercel.app/
     //      Debe ser HTTPS (para pruebas locales usa http://127.0.0.1:PUERTO/index.html).
     //   3. Pega tu Client ID aquí abajo.
     const SPOTIFY_CLIENT_ID = '714f08a16c5d452ebda528fd1190ab4a';
