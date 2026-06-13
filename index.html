@@ -1330,15 +1330,23 @@
       // Si el invitado llega desde un QR (?codigo=XXXX), el código viene precargado.
       // Si no, se recuerdan el último código y nombre usados en este teléfono
       // para que volver a entrar sea tocar un solo botón.
-      const urlCode = new URLSearchParams(window.location.search).get('codigo');
+      const params = new URLSearchParams(window.location.search);
+      const urlCode = params.get('codigo');
       if (urlCode) {
         document.getElementById('login-code').value = urlCode.toUpperCase();
       } else {
         const lastCode = localStorage.getItem('catapp_last_code');
         if (lastCode) document.getElementById('login-code').value = lastCode;
       }
-      const lastName = localStorage.getItem('catapp_last_name');
-      if (lastName) document.getElementById('login-name').value = lastName;
+      // El nombre también puede venir en el link (?nombre=...), así entrar es un
+      // solo toque. Si no viene, se recuerda el último usado en este teléfono.
+      const urlName = params.get('nombre');
+      if (urlName) {
+        document.getElementById('login-name').value = urlName;
+      } else {
+        const lastName = localStorage.getItem('catapp_last_name');
+        if (lastName) document.getElementById('login-name').value = lastName;
+      }
 
       // La sesión guardada se restaura antes de cargar invitados
       // (define si es admin, p. ej. para subir la lista la primera vez)
