@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <!-- Zoom con los dedos habilitado en toda la app (sin maximum-scale ni user-scalable=no) -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>CatApp — Mis XV Cata</title>
 
   <!-- Instalable como app en el teléfono (PWA) -->
@@ -80,16 +80,22 @@
       box-shadow: none !important;
     }
 
-    /* Reproductor de Spotify: forzamos el formato Grande (352px de alto),
-       igual que el ejemplo "Grande" de la prueba, pase lo que pase. */
+    /* Reproductor de Spotify: barra compacta (mini-player) pegada abajo.
+       Con el botón ⌃ se agranda al formato grande (352px) y vuelve a achicarse. */
     #spotify-player-frame,
     #spotify-player iframe {
-      height: 352px !important;
-      min-height: 352px !important;
+      height: 80px !important;
+      min-height: 80px !important;
       width: 100% !important;
       border: 0 !important;
-      border-radius: 14px;
+      border-radius: 12px 12px 0 0;
       display: block;
+      transition: height 0.25s ease;
+    }
+    #spotify-player.player-expanded #spotify-player-frame,
+    #spotify-player.player-expanded iframe {
+      height: 352px !important;
+      min-height: 352px !important;
     }
 
     /* Botón principal de la fiesta: degradado rosa → violeta con glow neón */
@@ -204,7 +210,7 @@
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center overflow-x-hidden relative" style="padding-bottom: calc(15vh + 380px + env(safe-area-inset-bottom));">
+<body class="min-h-screen flex flex-col items-center overflow-x-hidden relative" style="padding-bottom: calc(118px + env(safe-area-inset-bottom));">
   <!-- Aplica el tema (claro/oscuro) apenas carga, según preferencia guardada o el sistema -->
   <script>
     (function () {
@@ -212,6 +218,8 @@
         var s = localStorage.getItem('catapp_theme');
         var dark = s ? s === 'dark' : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.body.classList.add(dark ? 'theme-dark' : 'theme-light');
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', dark ? '#08080c' : '#fdf2f8');
       } catch (e) { document.body.classList.add('theme-dark'); }
     })();
   </script>
@@ -484,14 +492,14 @@
     <!-- HEADER -->
     <header class="sticky top-0 z-30 py-3 bg-white/90 backdrop-blur-md border-b border-pink-100 mb-6 flex flex-wrap gap-y-3 justify-between items-center">
       <div class="flex items-center gap-3">
-        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-pink-400 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-pink-200 shrink-0">
-          <svg class="w-9 h-9" fill="currentColor" viewBox="0 0 24 24">
+        <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-400 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-pink-200 shrink-0">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M9 19V6l12-3v13c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3c.35 0 .69.06 1 .17V7.41L11 9.03V19c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3c.35 0 .69.06 1 .17z"/>
           </svg>
         </div>
         <div>
-          <h2 class="text-zinc-900 leading-none"><span class="font-cursive text-6xl">Cata</span> <span class="font-serif text-3xl tracking-[0.15em] text-fiestaDark font-bold">XV</span></h2>
-          <p class="text-2xl text-zinc-500 font-semibold mt-1">11.09.26</p>
+          <h2 class="text-zinc-900 leading-none"><span class="font-cursive text-4xl">Cata</span> <span class="font-serif text-xl tracking-[0.15em] text-fiestaDark font-bold">XV</span></h2>
+          <p class="text-sm text-zinc-500 font-semibold mt-1">11.09.26</p>
         </div>
       </div>
 
@@ -502,21 +510,21 @@
 
         <!-- Ver el instructivo paso a paso -->
         <button id="btn-info" onclick="openTutorial()" title="Ver el instructivo"
-          class="w-16 h-16 rounded-full bg-pink-50 text-fiestaDark flex items-center justify-center transition active:scale-95 shrink-0">
-          <svg class="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          class="w-11 h-11 rounded-full bg-pink-50 text-fiestaDark flex items-center justify-center transition active:scale-95 shrink-0">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </button>
 
         <!-- Cambiar entre tema claro y oscuro -->
         <button id="btn-theme" onclick="toggleTheme()" title="Tema claro u oscuro"
-          class="w-16 h-16 rounded-full bg-pink-50 flex items-center justify-center text-4xl transition active:scale-95 shrink-0">
+          class="w-11 h-11 rounded-full bg-pink-50 flex items-center justify-center text-xl transition active:scale-95 shrink-0">
           <span id="theme-toggle-icon">🌙</span>
         </button>
 
         <button onclick="logout()" title="Salir"
-          class="hidden w-16 h-16 rounded-full bg-pink-50 text-pink-400 hover:text-fiestaDark flex items-center justify-center transition active:scale-95 shrink-0">
-          <svg class="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          class="hidden w-11 h-11 rounded-full bg-pink-50 text-pink-400 hover:text-fiestaDark flex items-center justify-center transition active:scale-95 shrink-0">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
         </button>
@@ -524,52 +532,52 @@
         <!-- Menú: navegación y salir de sesión -->
         <div class="relative shrink-0">
           <button id="btn-menu" onclick="toggleMenu(event)" title="Menú"
-            class="w-16 h-16 rounded-full bg-pink-50 text-fiestaDark flex items-center justify-center transition active:scale-95">
-            <svg class="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            class="w-11 h-11 rounded-full bg-pink-50 text-fiestaDark flex items-center justify-center transition active:scale-95">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
 
           <div id="header-menu" class="hidden absolute right-0 mt-2 w-80 max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-pink-100 overflow-y-auto overflow-x-hidden max-h-[80vh] no-scrollbar z-[60] animate-fadeIn">
             <button id="menu-soundtrack" onclick="menuGo('soundtrack')"
-              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition">
-              <span class="text-3xl">🏆</span> Ranking de votos
+              class="menu-admin sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition">
+              <span class="text-xl">🏆</span> Ranking de votos
             </button>
             <button onclick="menuGo('dj')"
-              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
-              <span class="text-3xl">🎧</span> Modo DJ
+              class="menu-admin sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-xl">🎧</span> Modo DJ
             </button>
             <button onclick="menuGo('invitados')"
-              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
-              <span class="text-3xl">👥</span> Invitados
+              class="menu-admin sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-xl">👥</span> Invitados
             </button>
             <button onclick="menuGo('mesas')"
-              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
-              <span class="text-3xl">🍽️</span> Mesas
+              class="menu-admin sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-xl">🍽️</span> Mesas
             </button>
             <button onclick="menuGo('exportar')"
-              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
-              <span class="text-3xl">⬆</span> Exportar a Spotify
+              class="menu-admin sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-xl">⬆</span> Exportar a Spotify
             </button>
             <button id="menu-search" onclick="menuGo('search')"
-              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
-              <span class="text-3xl">🎶</span> <span id="menu-search-label">Votar canciones</span>
+              class="sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-xl">🎶</span> <span id="menu-search-label">Votar canciones</span>
             </button>
             <button onclick="menuGo('profile-top')"
-              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
-              <span class="text-3xl">👤</span> Mi perfil
+              class="sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-xl">👤</span> Mi perfil
             </button>
             <button onclick="menuGo('profile-votes')"
-              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
-              <span class="text-3xl">💖</span> Canciones votadas
+              class="sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-xl">💖</span> Canciones votadas
             </button>
             <button onclick="menuGo('ver-invitado')"
-              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
-              <span class="text-3xl">👁</span> Ver como invitado
+              class="menu-admin sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-xl">👁</span> Ver como invitado
             </button>
             <button onclick="logout()"
-              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-pink-500 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-100">
-              <span class="text-3xl">🚪</span> Salir de sesión
+              class="sin-borde w-full text-left px-5 py-3.5 text-base font-bold text-pink-500 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-100">
+              <span class="text-xl">🚪</span> Salir de sesión
             </button>
           </div>
         </div>
@@ -663,11 +671,11 @@
         <!-- Solapas: tu propio ranking y el de Spotify Argentina, bien separados -->
         <div id="rankings-tabs" class="flex gap-2">
           <button id="btn-ranking-personal" type="button" onclick="setRankingTab('personal')"
-            class="flex-1 px-2 pt-3 pb-2.5 text-center text-base font-extrabold leading-tight rounded-t-2xl border-b-4 transition border-pink-100 text-zinc-400">
+            class="flex-1 px-2 pt-3 pb-2.5 text-center text-sm font-extrabold leading-tight rounded-t-2xl border-b-4 transition border-pink-100 text-zinc-400">
             🏆 Tus más escuchadas
           </button>
           <button id="btn-ranking-arg" type="button" onclick="setRankingTab('arg')"
-            class="flex-1 px-2 pt-3 pb-2.5 text-center text-base font-extrabold leading-tight rounded-t-2xl border-b-4 transition border-fiesta bg-pink-50 text-fiestaDark">
+            class="flex-1 px-2 pt-3 pb-2.5 text-center text-sm font-extrabold leading-tight rounded-t-2xl border-b-4 transition border-fiesta bg-pink-50 text-fiestaDark">
             🇦🇷 Spotify Argentina
           </button>
         </div>
@@ -680,15 +688,15 @@
           </div>
           <div id="top-tracks-filters" class="p-1.5 bg-pink-50 rounded-full flex gap-1">
             <button id="btn-top-range-short_term" onclick="setTopTracksRange('short_term')"
-              class="flex-1 text-center py-4 text-2xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
+              class="flex-1 text-center py-2 text-xs font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
               Último mes
             </button>
             <button id="btn-top-range-medium_term" onclick="setTopTracksRange('medium_term')"
-              class="flex-1 text-center py-4 text-2xl font-bold rounded-full transition bg-zinc-100 text-black whitespace-nowrap">
+              class="flex-1 text-center py-2 text-xs font-bold rounded-full transition bg-zinc-100 text-black whitespace-nowrap">
               6 meses
             </button>
             <button id="btn-top-range-long_term" onclick="setTopTracksRange('long_term')"
-              class="flex-1 text-center py-4 text-2xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
+              class="flex-1 text-center py-2 text-xs font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
               De siempre
             </button>
           </div>
@@ -705,15 +713,15 @@
           </div>
           <div class="p-1.5 bg-pink-50 rounded-full flex gap-1">
             <button id="btn-arg-range-short_term" onclick="setArgTopRange('short_term')"
-              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition bg-white text-fiestaDark shadow-sm whitespace-nowrap">
+              class="flex-1 text-center py-2 text-xs font-bold rounded-full transition bg-white text-fiestaDark shadow-sm whitespace-nowrap">
               Último mes
             </button>
             <button id="btn-arg-range-medium_term" onclick="setArgTopRange('medium_term')"
-              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
+              class="flex-1 text-center py-2 text-xs font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
               6 meses
             </button>
             <button id="btn-arg-range-long_term" onclick="setArgTopRange('long_term')"
-              class="flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
+              class="flex-1 text-center py-2 text-xs font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
               De siempre
             </button>
           </div>
@@ -803,10 +811,15 @@
     </div>
 
     <!-- REPRODUCTOR EMBEBIDO DE SPOTIFY (completo con Premium; adelanto para el resto) -->
-    <!-- Barra fija a todo el ancho, pegada abajo, con su propia sombra -->
-    <div id="spotify-player" class="fixed left-0 right-0 z-40 w-full hidden" style="bottom: calc(15vh + env(safe-area-inset-bottom));">
-      <!-- La API de Spotify reemplaza el div interno por el reproductor y permite el play automático -->
-      <div style="overflow:hidden; box-shadow:0 -8px 30px rgba(0,0,0,0.35);">
+    <!-- Barra compacta fija abajo; el botón ⌃ la agranda al formato grande -->
+    <div id="spotify-player" class="fixed left-0 right-0 z-40 w-full hidden" style="bottom: 0;">
+      <div style="overflow:hidden; box-shadow:0 -8px 30px rgba(0,0,0,0.28); padding-bottom: env(safe-area-inset-bottom); background:#000;">
+        <button onclick="togglePlayerSize()" id="player-size-btn" title="Agrandar o achicar el reproductor"
+          class="sin-borde w-full flex items-center justify-center gap-1.5 py-1 text-white/70 hover:text-white text-[11px] font-semibold transition">
+          <svg id="player-size-icon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+          <span id="player-size-label">Ver más grande</span>
+        </button>
+        <!-- La API de Spotify reemplaza el div interno por el reproductor y permite el play automático -->
         <div id="spotify-player-frame"></div>
       </div>
     </div>
@@ -821,19 +834,19 @@
   <div id="tutorial-pop" class="fixed left-1/2 -translate-x-1/2 w-[96%] max-w-2xl z-[90] hidden">
     <div class="bg-white rounded-3xl p-6 shadow-2xl border border-pink-100 max-h-[82vh] overflow-y-auto no-scrollbar">
       <div class="flex items-start justify-between gap-3">
-        <h3 id="tutorial-title" class="text-3xl font-extrabold text-zinc-900 leading-tight"></h3>
-        <button onclick="dismissTutorial()" title="Cerrar" class="sin-borde text-zinc-400 text-5xl leading-none -mt-2 shrink-0">&times;</button>
+        <h3 id="tutorial-title" class="text-xl font-extrabold text-zinc-900 leading-tight"></h3>
+        <button onclick="dismissTutorial()" title="Cerrar" class="sin-borde text-zinc-400 text-3xl leading-none -mt-2 shrink-0">&times;</button>
       </div>
-      <p id="tutorial-text" class="text-2xl text-zinc-600 mt-3 leading-relaxed"></p>
+      <p id="tutorial-text" class="text-base text-zinc-600 mt-3 leading-relaxed"></p>
       <div class="flex items-center justify-between mt-6 gap-3 flex-wrap">
         <div id="tutorial-dots" class="flex gap-2"></div>
         <div class="flex gap-2">
-          <button id="tutorial-prev" onclick="tutorialPrev()" class="sin-borde px-5 py-3 rounded-full bg-zinc-100 text-zinc-600 font-bold text-lg">Anterior</button>
-          <button id="tutorial-next" onclick="tutorialNext()" class="sin-borde px-7 py-3 rounded-full btn-fiesta font-extrabold text-lg">Siguiente</button>
+          <button id="tutorial-prev" onclick="tutorialPrev()" class="sin-borde px-5 py-2.5 rounded-full bg-zinc-100 text-zinc-600 font-bold text-sm">Anterior</button>
+          <button id="tutorial-next" onclick="tutorialNext()" class="sin-borde px-6 py-2.5 rounded-full btn-fiesta font-extrabold text-sm">Siguiente</button>
         </div>
       </div>
-      <label class="flex items-center gap-2.5 mt-5 text-lg text-zinc-500 cursor-pointer select-none">
-        <input type="checkbox" id="tutorial-dontshow" class="w-6 h-6 accent-pink-500" onchange="tutorialDontShowChanged(this.checked)">
+      <label class="flex items-center gap-2.5 mt-5 text-xs text-zinc-500 cursor-pointer select-none">
+        <input type="checkbox" id="tutorial-dontshow" class="w-4 h-4 accent-pink-500" onchange="tutorialDontShowChanged(this.checked)">
         No volver a mostrarme esto
       </label>
     </div>
@@ -1022,27 +1035,6 @@
       { id: "c8", title: "Animals", artist: "Martin Garrix", album: "Single", coverUrl: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=150&q=80", genre: "EDM" }
     ];
 
-    const PRESET_PLAYLISTS = [
-      {
-        name: "Cata's Favs (Reggaeton XV)",
-        creator: "Cata",
-        tracks: [
-          { id: "t1", title: "Gata Only", artist: "FloyyMenor & Cris Mj", album: "Single", coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80", genre: "Reggaeton" },
-          { id: "t2", title: "QLOCO", artist: "Cris Mj", album: "Single", coverUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=150&q=80", genre: "Reggaeton" },
-          { id: "t3", title: "Classy 101", artist: "Feid & Young Miko", album: "Single", coverUrl: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=150&q=80", genre: "Reggaeton" }
-        ]
-      },
-      {
-        name: "Electro Dance Festival",
-        creator: "DJ Residente",
-        tracks: [
-          { id: "t4", title: "Titanium", artist: "David Guetta & Sia", album: "Nothing but the Beat", coverUrl: "https://images.unsplash.com/photo-1487180142328-0c4e37023af5?w=150&q=80", genre: "EDM" },
-          { id: "t5", title: "Levels", artist: "Avicii", album: "Single", coverUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=150&q=80", genre: "EDM" },
-          { id: "t6", title: "Animals", artist: "Martin Garrix", album: "Single", coverUrl: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=150&q=80", genre: "EDM" }
-        ]
-      }
-    ];
-
     // ==========================================
     // TOP 50 ARGENTINA (CURADO)
     // Spotify no publica un ranking de Argentina por período, así que armamos
@@ -1229,7 +1221,6 @@
     let currentSearchMode = 'spotify';
     let selectedImportTracks = {};
     let currentPreviewPlaylist = null;
-    let detectedSong = null;
 
     // Sesión oficial de Spotify (Authorization Code + PKCE)
     let spotifyAuth = null;        // { accessToken, refreshToken, expiresAt }
@@ -1709,7 +1700,7 @@
       document.getElementById('tutorial-title').innerText = step.title;
       document.getElementById('tutorial-text').innerText = step.text;
       document.getElementById('tutorial-dots').innerHTML = TUTORIAL_STEPS.map((_, i) =>
-        `<span class="w-3.5 h-3.5 rounded-full ${i === tutorialIndex ? 'bg-fiesta' : 'bg-zinc-300'}"></span>`
+        `<span class="w-2 h-2 rounded-full ${i === tutorialIndex ? 'bg-fiesta' : 'bg-zinc-300'}"></span>`
       ).join('');
 
       const prevBtn = document.getElementById('tutorial-prev');
@@ -2130,7 +2121,7 @@
     // vez y se alterna con los botones de arriba.
     // ==========================================
     function rankingTabClass(active) {
-      const base = "flex-1 px-2 pt-3 pb-2.5 text-center text-base font-extrabold leading-tight rounded-t-2xl border-b-4 transition";
+      const base = "flex-1 px-2 pt-3 pb-2.5 text-center text-sm font-extrabold leading-tight rounded-t-2xl border-b-4 transition";
       return active
         ? base + " border-fiesta bg-pink-50 text-fiestaDark"
         : base + " border-pink-100 text-zinc-400";
@@ -2203,8 +2194,8 @@
         const btn = document.getElementById(`btn-top-range-${r}`);
         if (btn) {
           btn.className = r === topTracksRange
-            ? "sin-borde flex-1 text-center py-3 text-xl font-bold rounded-full transition bg-white text-fiestaDark shadow-sm whitespace-nowrap"
-            : "sin-borde flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap";
+            ? "sin-borde flex-1 text-center py-2 text-xs font-bold rounded-full transition bg-white text-fiestaDark shadow-sm whitespace-nowrap"
+            : "sin-borde flex-1 text-center py-2 text-xs font-bold rounded-full transition text-zinc-500 whitespace-nowrap";
         }
       });
 
@@ -2278,28 +2269,28 @@
         return `
           <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition animate-fadeIn">
             <div class="flex items-center gap-3.5 min-w-0">
-              <span class="w-11 text-center text-3xl font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
-              <div class="relative w-20 h-20 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
+              <span class="w-8 text-center text-lg font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
+              <div class="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
                 <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
                 <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
-                  <svg class="w-8 h-8 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
                 </button>
               </div>
               <div class="min-w-0">
-                <h4 class="text-3xl font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(track.title)}</h4>
-                <p class="text-2xl text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
-                ${votedByMe ? '<p class="text-lg text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
+                <h4 class="text-base font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(track.title)}</h4>
+                <p class="text-sm text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+                ${votedByMe ? '<p class="text-xs text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
               </div>
             </div>
 
             <button
               onclick="${votedByMe ? `voteSong('${existing.id}')` : `addSongFromTop(${index})`}"
               title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
-              class="w-16 h-16 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
+              class="w-12 h-12 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
             >
-              <svg class="w-8 h-8 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-6 h-6 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 ${icon}
               </svg>
             </button>
@@ -2400,8 +2391,8 @@
         const btn = document.getElementById(`btn-arg-range-${r}`);
         if (btn) {
           btn.className = r === argTopRange
-            ? "sin-borde flex-1 text-center py-3 text-xl font-bold rounded-full transition bg-white text-fiestaDark shadow-sm whitespace-nowrap"
-            : "sin-borde flex-1 text-center py-3 text-xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap";
+            ? "sin-borde flex-1 text-center py-2 text-xs font-bold rounded-full transition bg-white text-fiestaDark shadow-sm whitespace-nowrap"
+            : "sin-borde flex-1 text-center py-2 text-xs font-bold rounded-full transition text-zinc-500 whitespace-nowrap";
         }
       });
 
@@ -2455,28 +2446,28 @@
         return `
           <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition animate-fadeIn">
             <div class="flex items-center gap-3.5 min-w-0">
-              <span class="w-11 text-center text-3xl font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
-              <div class="relative w-20 h-20 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
+              <span class="w-8 text-center text-lg font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
+              <div class="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
                 <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
                 <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
-                  <svg class="w-8 h-8 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
                 </button>
               </div>
               <div class="min-w-0">
-                <h4 class="text-3xl font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(track.title)}</h4>
-                <p class="text-2xl text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
-                ${votedByMe ? '<p class="text-lg text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
+                <h4 class="text-base font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(track.title)}</h4>
+                <p class="text-sm text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+                ${votedByMe ? '<p class="text-xs text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
               </div>
             </div>
 
             <button
               onclick="${votedByMe ? `voteSong('${existing.id}')` : `addSongFromArgTop(${index})`}"
               title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
-              class="w-16 h-16 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
+              class="w-12 h-12 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
             >
-              <svg class="w-8 h-8 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-6 h-6 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 ${icon}
               </svg>
             </button>
@@ -3702,22 +3693,22 @@
                style="background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%); box-shadow: 0 12px 30px rgba(236,72,153,0.35);">
             <div class="flex items-center gap-4 min-w-0">
               <button onclick="toggleTrackPlayback('${top.id}')" title="Escuchar"
-                class="sin-borde relative w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-white/20 shadow-lg">
+                class="sin-borde relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-white/20 shadow-lg">
                 <img src="${top.coverUrl}" alt="Cover" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
                 <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
-                  <svg class="w-9 h-9 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-7 h-7 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     ${isPlaying ? '<path d="M6 6h4v12H6zM14 6h4v12h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}
                   </svg>
                 </span>
               </button>
               <div class="min-w-0">
                 <span class="text-sm font-extrabold uppercase tracking-wider text-white/90">👑 La más votada</span>
-                <h3 class="text-2xl font-extrabold truncate pr-2 mt-1 leading-tight">${escapeHtml(top.title)}</h3>
-                <p class="text-base text-white/80 truncate">${escapeHtml(top.artist)}</p>
+                <h3 class="text-lg font-extrabold truncate pr-2 mt-1 leading-tight">${escapeHtml(top.title)}</h3>
+                <p class="text-sm text-white/80 truncate">${escapeHtml(top.artist)}</p>
               </div>
             </div>
             <div class="text-right shrink-0">
-              <span class="text-4xl font-black block leading-none">${top.votes}</span>
+              <span class="text-2xl font-black block leading-none">${top.votes}</span>
               <span class="text-sm font-bold text-white/80">votos 💖</span>
             </div>
           </div>
@@ -3745,9 +3736,9 @@
         listContainer.innerHTML += `
           <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition flex-nowrap animate-fadeIn">
             <div class="flex items-center gap-3.5 min-w-0 flex-1">
-              <span class="w-11 text-center text-3xl font-black ${idx < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${idx + 1}</span>
+              <span class="w-8 text-center text-lg font-black ${idx < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${idx + 1}</span>
               <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar"
-                class="sin-borde relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-zinc-100 flex-none">
+                class="sin-borde relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 bg-zinc-100 flex-none">
                 <img src="${song.coverUrl}" alt="Cover" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
                 <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                   ${isPlaying ? `
@@ -3757,15 +3748,15 @@
                       <span class="bg-white w-[3px] animate-pulse h-6" style="animation-delay: 0.2s;"></span>
                     </span>
                   ` : `
-                    <svg class="w-7 h-7 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                   `}
                 </span>
               </button>
 
               <div class="min-w-0 flex-1">
-                <h4 class="text-3xl font-extrabold text-zinc-800 truncate pr-2 leading-tight">${escapeHtml(song.title)}</h4>
-                <p class="text-2xl text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
-                <div class="flex items-center gap-1.5 text-base text-zinc-400 truncate mt-1">
+                <h4 class="text-base font-extrabold text-zinc-800 truncate pr-2 leading-tight">${escapeHtml(song.title)}</h4>
+                <p class="text-sm text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
+                <div class="flex items-center gap-1.5 text-xs text-zinc-400 truncate mt-1">
                   <span class="truncate">Pedida por ${escapeHtml(song.addedBy)}</span>
                   ${song.playedAt ? '<span class="text-[10px] font-black bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full uppercase shrink-0">Ya sonó</span>' : ''}
                 </div>
@@ -3782,10 +3773,10 @@
                   : 'bg-pink-50 text-fiestaDark'
               }"
             >
-              <svg class="w-7 h-7 ${isVoted ? 'fill-current' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-5 h-5 ${isVoted ? 'fill-current' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
-              <span class="text-2xl font-black font-mono leading-none">${song.votes}</span>
+              <span class="text-base font-black font-mono leading-none">${song.votes}</span>
             </button>
           </div>
         `;
@@ -3834,14 +3825,6 @@
     // ==========================================
     // BUSCADOR REAL DE SPOTIFY CON RESPALDO
     // ==========================================
-    // El buscador es ahora único (se quitó "Importar playlist"). La función se
-    // mantiene por compatibilidad y es a prueba de nulos.
-    function setSearchMode(mode) {
-      currentSearchMode = 'spotify';
-      const panelSpotify = document.getElementById('spotify-search-panel');
-      if (panelSpotify) panelSpotify.classList.remove('hidden');
-    }
-
     let searchDebounceTimeout;
     function searchSpotify() {
       const q = document.getElementById('spotify-input').value.trim();
@@ -3941,23 +3924,23 @@
         resultsContainer.innerHTML += `
           <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition animate-fadeIn">
             <div class="flex items-center gap-3.5 min-w-0">
-              <div class="relative w-20 h-20 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
+              <div class="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
                 <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
                 ${playOverlay}
               </div>
               <div class="min-w-0">
-                <h4 class="text-3xl font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(track.title)}</h4>
-                <p class="text-2xl text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
-                ${votedByMe ? '<p class="text-lg text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
+                <h4 class="text-base font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(track.title)}</h4>
+                <p class="text-sm text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
+                ${votedByMe ? '<p class="text-xs text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
               </div>
             </div>
 
             <button
               onclick="${votedByMe ? `voteSong('${existing.id}')` : `addSongFromSearch(${index})`}"
               title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
-              class="w-16 h-16 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
+              class="w-12 h-12 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
             >
-              <svg class="w-8 h-8 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-6 h-6 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 ${icon}
               </svg>
             </button>
@@ -3980,163 +3963,6 @@
         renderAll();
         openDedicationModal(songs.find(s => s.title.toLowerCase() === track.title.toLowerCase()));
       }
-    }
-
-    // ==========================================
-    // CARGAR Y CONFIRMAR PLAYLIST
-    // ==========================================
-    function loadPresetPlaylist(idx) {
-      const preset = PRESET_PLAYLISTS[idx];
-      document.getElementById('playlist-url-input').value = `https://open.spotify.com/playlist/cata-xv-${idx}`;
-      
-      currentPreviewPlaylist = preset;
-      selectedImportTracks = {};
-      preset.tracks.forEach(track => {
-        selectedImportTracks[track.id] = true;
-      });
-
-      renderImportPreview();
-    }
-
-    async function analyzePlaylist() {
-      const url = document.getElementById('playlist-url-input').value.trim();
-      if (!url) {
-        showToast("Ingresa un enlace de Playlist válido.", "warning");
-        return;
-      }
-
-      if (isSpotifyConnected() || isSharedMode()) {
-        const match = url.match(/playlist\/([a-zA-Z0-9]+)/);
-        if (!match) {
-          showToast("El enlace no parece ser una playlist de Spotify.", "warning");
-          return;
-        }
-
-        showToast("Analizando tu playlist real de Spotify...", "info");
-        try {
-          // Con la cuenta del anfitrión se leen también playlists privadas;
-          // a través del servidor, las públicas (suficiente para invitados)
-          const data = isSpotifyConnected()
-            ? await spotifyApi(`/playlists/${match[1]}`)
-            : await proxySpotify(`playlist=${match[1]}`);
-
-          // Se ignoran episodios de podcast y temas eliminados (track null)
-          const importedTracks = (data.tracks.items || [])
-            .filter(item => item && item.track && item.track.id)
-            .slice(0, 30)
-            .map(item => mapSpotifyTrack(item.track));
-
-          if (importedTracks.length === 0) {
-            showToast("Esa playlist no tiene canciones importables.", "warning");
-            return;
-          }
-
-          currentPreviewPlaylist = {
-            name: data.name,
-            creator: data.owner.display_name,
-            tracks: importedTracks
-          };
-
-          selectedImportTracks = {};
-          importedTracks.forEach(track => {
-            selectedImportTracks[track.id] = true;
-          });
-
-          renderImportPreview();
-        } catch (err) {
-          console.error("Error al importar playlist:", err);
-          showToast(
-            err.message === 'SPOTIFY_NO_AUTH'
-              ? "Tu sesión de Spotify expiró. Conéctate de nuevo."
-              : "No se pudo leer esa playlist. Verifica el enlace y que la lista sea pública.",
-            "error"
-          );
-        }
-        return;
-      }
-
-      const preset = PRESET_PLAYLISTS[Math.floor(Math.random() * PRESET_PLAYLISTS.length)];
-      currentPreviewPlaylist = preset;
-      selectedImportTracks = {};
-      preset.tracks.forEach(track => {
-        selectedImportTracks[track.id] = true;
-      });
-
-      renderImportPreview();
-      showToast("Playlist de demostración analizada.", "success");
-    }
-
-    function renderImportPreview() {
-      const box = document.getElementById('import-preview-box');
-      box.classList.remove('hidden');
-
-      document.getElementById('import-playlist-title').innerText = currentPreviewPlaylist.name;
-      document.getElementById('import-playlist-author').innerText = `Por ${currentPreviewPlaylist.creator}`;
-
-      const tracksList = document.getElementById('import-tracks-list');
-      tracksList.innerHTML = '';
-
-      currentPreviewPlaylist.tracks.forEach((track, idx) => {
-        const isChecked = selectedImportTracks[track.id];
-        const alreadyAdded = songs.some(s => s.title.toLowerCase() === track.title.toLowerCase());
-
-        tracksList.innerHTML += `
-          <div 
-            onclick="${alreadyAdded ? '' : `toggleTrackSelection('${track.id}')`}"
-            class="flex items-center justify-between p-2.5 rounded-xl text-left cursor-pointer transition ${alreadyAdded ? 'opacity-40 cursor-not-allowed bg-zinc-50/20' : 'hover:bg-zinc-100/40'}"
-          >
-            <div class="flex items-center gap-3 min-w-0">
-              <img src="${track.coverUrl}" alt="Cover" class="w-8 h-8 rounded object-cover bg-zinc-100" />
-              <div class="min-w-0">
-                <h5 class="text-[11px] font-bold text-zinc-800 truncate">${escapeHtml(track.title)}</h5>
-                <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
-              </div>
-            </div>
-
-            <div class="shrink-0">
-              ${alreadyAdded ? `
-                <span class="text-[8px] font-bold text-zinc-600 bg-black/5 px-2 py-0.5 rounded border border-black/10">En Soundtrack</span>
-              ` : `
-                <div class="w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-black border-black text-white' : 'border-zinc-900'}" id="chk-${track.id}">
-                  ${isChecked ? '<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>' : ''}
-                </div>
-              `}
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    function toggleTrackSelection(trackId) {
-      selectedImportTracks[trackId] = !selectedImportTracks[trackId];
-      renderImportPreview();
-    }
-
-    function closeImportPreview() {
-      document.getElementById('import-preview-box').classList.add('hidden');
-      currentPreviewPlaylist = null;
-    }
-
-    async function confirmImport() {
-      if (!currentPreviewPlaylist) return;
-
-      const toAdd = currentPreviewPlaylist.tracks.filter(t => selectedImportTracks[t.id]);
-      if (toAdd.length === 0) {
-        showToast("No has seleccionado ningún tema para importar.", "warning");
-        return;
-      }
-
-      let count = 0;
-      for (const track of toAdd) {
-        if (await addSongRecord(track, { silent: true })) {
-          count++;
-        }
-      }
-
-      showToast(`¡Se importaron ${count} temas al boliche!`, "success");
-      closeImportPreview();
-      document.getElementById('playlist-url-input').value = '';
-      switchTab('soundtrack');
     }
 
     // ==========================================
@@ -4163,15 +3989,15 @@
           myVotesBox.innerHTML += `
             <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition">
               <div class="flex items-center gap-3.5 min-w-0">
-                <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" class="sin-borde relative w-16 h-16 rounded-2xl overflow-hidden bg-zinc-200 flex-none">
+                <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" class="sin-borde relative w-12 h-12 rounded-2xl overflow-hidden bg-zinc-200 flex-none">
                   <img src="${song.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
                   <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
-                    <svg class="w-7 h-7 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                   </span>
                 </button>
                 <div class="min-w-0">
-                  <h4 class="text-3xl font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(song.title)}</h4>
-                  <p class="text-2xl text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
+                  <h4 class="text-base font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(song.title)}</h4>
+                  <p class="text-sm text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
                 </div>
               </div>
 
@@ -4224,26 +4050,6 @@
           </div>
         `;
       });
-    }
-
-    function addSongFromSuggest(globalIndex) {
-      const track = window[`track_suggest_${globalIndex}`];
-      if (track) {
-        addSongFromTrack(track);
-      }
-    }
-
-    async function addSongFromTrack(track) {
-      const result = await addSongRecord(track);
-      if (result === 'added') {
-        showToast(`"${track.title}" pedida y votada. ¡El DJ la tendrá en cuenta!`, "success");
-      } else if (result === 'voted') {
-        showToast(`¡Le sumaste tu voto a "${track.title}"!`, "success");
-      }
-      if (result) {
-        renderAll();
-        openDedicationModal(songs.find(s => s.title.toLowerCase() === track.title.toLowerCase()));
-      }
     }
 
     async function deleteMySong(songId) {
@@ -4443,65 +4249,6 @@
     }
 
     // ==========================================
-    // RECONOCIMIENTO ACÚSTICO (ESCANEAR MIC)
-    // ==========================================
-    function openMicModal() {
-      document.getElementById('mic-modal').classList.remove('hidden');
-      startMicScan();
-    }
-
-    function closeMicModal() {
-      document.getElementById('mic-modal').classList.add('hidden');
-      stopPlayback();
-      renderAll();
-    }
-
-    function startMicScan() {
-      document.getElementById('mic-stage-listening').classList.remove('hidden');
-      document.getElementById('mic-stage-analyzing').classList.add('hidden');
-      document.getElementById('mic-stage-success').classList.add('hidden');
-      
-      setTimeout(() => {
-        document.getElementById('mic-stage-listening').classList.add('hidden');
-        document.getElementById('mic-stage-analyzing').classList.remove('hidden');
-
-        setTimeout(() => {
-          document.getElementById('mic-stage-analyzing').classList.add('hidden');
-          document.getElementById('mic-stage-success').classList.remove('hidden');
-          
-          const unadded = SPOTIFY_CATALOG.filter(track => !songs.some(s => s.title.toLowerCase() === track.title.toLowerCase()));
-          detectedSong = unadded.length > 0 ? unadded[Math.floor(Math.random() * unadded.length)] : SPOTIFY_CATALOG[0];
-
-          document.getElementById('detected-cover').src = detectedSong.coverUrl;
-          document.getElementById('detected-title').innerText = detectedSong.title;
-          document.getElementById('detected-artist').innerText = detectedSong.artist;
-
-          showToast("¡Ritmo identificado con éxito!", "success");
-
-        }, 2800);
-      }, 3000);
-    }
-
-    function addDetectedSong() {
-      if (detectedSong) {
-        addSongFromTrack(detectedSong);
-        closeMicModal();
-      }
-    }
-
-    function playSampleAudioDetected() {
-      if (detectedSong) {
-        toggleTrackPlayback(detectedSong.id);
-        const icon = document.getElementById('btn-play-detected');
-        if (playingTrackId === detectedSong.id) {
-          icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6v6H9V9z" />';
-        } else {
-          icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />';
-        }
-      }
-    }
-
-    // ==========================================
     // REPRODUCTOR EMBEBIDO DE SPOTIFY
     // Invitados con sesión Premium en el navegador escuchan la canción
     // completa dentro de CatApp; el resto, un adelanto de 30 segundos
@@ -4511,7 +4258,7 @@
     window.onSpotifyIframeApiReady = (IFrameAPI) => {
       const element = document.getElementById('spotify-player-frame');
       if (!element) return;
-      IFrameAPI.createController(element, { width: '100%', height: 352, uri: '' }, (controller) => {
+      IFrameAPI.createController(element, { width: '100%', height: 80, uri: '' }, (controller) => {
         spotifyController = controller;
         if (spotifyPendingUri) {
           // El usuario tocó play antes de que el reproductor estuviera listo:
@@ -4580,6 +4327,19 @@
       if (panel) panel.classList.add('hidden');
     }
 
+    // Agranda o achica el reproductor (mini-barra ⇄ formato grande)
+    function togglePlayerSize() {
+      const panel = document.getElementById('spotify-player');
+      if (!panel) return;
+      const expanded = panel.classList.toggle('player-expanded');
+      const label = document.getElementById('player-size-label');
+      const icon = document.getElementById('player-size-icon');
+      if (label) label.innerText = expanded ? 'Ver más chico' : 'Ver más grande';
+      if (icon) icon.innerHTML = expanded
+        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>'
+        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>';
+    }
+
     // ==========================================
     // REPRODUCTOR: PREVIEW REAL DE SPOTIFY + SINTETIZADOR DE RESPALDO
     // ==========================================
@@ -4590,8 +4350,7 @@
         return;
       }
 
-      const track = songs.find(s => s.id === trackId)
-        || (detectedSong && detectedSong.id === trackId ? detectedSong : null);
+      const track = songs.find(s => s.id === trackId);
       if (!track) return;
 
       // Canciones reales de Spotify: se escuchan en el reproductor embebido
