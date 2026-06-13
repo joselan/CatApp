@@ -530,10 +530,26 @@
             </svg>
           </button>
 
-          <div id="header-menu" class="hidden absolute right-0 mt-2 w-80 max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-pink-100 overflow-hidden z-[60] animate-fadeIn">
+          <div id="header-menu" class="hidden absolute right-0 mt-2 w-80 max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-pink-100 overflow-y-auto overflow-x-hidden max-h-[80vh] no-scrollbar z-[60] animate-fadeIn">
             <button id="menu-soundtrack" onclick="menuGo('soundtrack')"
-              class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition">
+              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition">
               <span class="text-3xl">🏆</span> Ranking de votos
+            </button>
+            <button onclick="menuGo('dj')"
+              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-3xl">🎧</span> Modo DJ
+            </button>
+            <button onclick="menuGo('invitados')"
+              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-3xl">👥</span> Invitados
+            </button>
+            <button onclick="menuGo('mesas')"
+              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-3xl">🍽️</span> Mesas
+            </button>
+            <button onclick="menuGo('exportar')"
+              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-3xl">⬆</span> Exportar a Spotify
             </button>
             <button id="menu-search" onclick="menuGo('search')"
               class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
@@ -546,6 +562,10 @@
             <button onclick="menuGo('profile-votes')"
               class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
               <span class="text-3xl">💖</span> Canciones votadas
+            </button>
+            <button onclick="menuGo('ver-invitado')"
+              class="menu-admin sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-zinc-700 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-50">
+              <span class="text-3xl">👁</span> Ver como invitado
             </button>
             <button onclick="logout()"
               class="sin-borde w-full text-left px-5 py-5 text-2xl font-bold text-pink-500 hover:bg-pink-50 active:bg-pink-100 flex items-center gap-4 transition border-t border-pink-100">
@@ -1581,7 +1601,7 @@
 
       // Los invitados no ven el ranking: solo buscan y votan temas.
       // El ranking, los votos por invitado y las estadísticas son de los admins.
-      document.getElementById('menu-soundtrack').classList.toggle('hidden', !isAdmin());
+      document.querySelectorAll('.menu-admin').forEach(el => el.classList.toggle('hidden', !isAdmin()));
       // El cartel de conectar Spotify lo muestra/oculta updateSpotifyBannerUI:
       // está disponible para todos y, una vez conectado, desaparece solo.
       const searchLabel = document.getElementById('menu-search-label');
@@ -3478,6 +3498,16 @@
         switchTab('profile');
         const el = document.getElementById('my-votes-container');
         if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      } else if (target === 'dj') {
+        openDjMode();
+      } else if (target === 'invitados') {
+        openGuestsPanel();
+      } else if (target === 'mesas') {
+        openMesasPanel();
+      } else if (target === 'exportar') {
+        exportRankingToSpotify();
+      } else if (target === 'ver-invitado') {
+        toggleGuestView();
       } else {
         switchTab(target);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3534,29 +3564,6 @@
       );
 
       statsBox.innerHTML = `
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="openDjMode()"
-            class="py-3.5 rounded-2xl bg-zinc-800 text-white font-extrabold text-xs transition active:scale-95 shadow-lg border border-white/10">
-            🎧 Modo DJ
-          </button>
-          <button onclick="openGuestsPanel()"
-            class="py-3.5 rounded-2xl btn-fiesta font-extrabold text-xs transition active:scale-95">
-            👥 Invitados
-          </button>
-          <button onclick="openMesasPanel()"
-            class="py-3.5 rounded-2xl bg-violet-100 text-violet-800 font-extrabold text-xs transition active:scale-95">
-            🍽️ Mesas
-          </button>
-          <button onclick="exportRankingToSpotify()"
-            class="py-3.5 rounded-2xl bg-[#1DB954] hover:bg-[#1ed760] text-white font-extrabold text-xs transition active:scale-95 shadow-lg">
-            ⬆ Exportar a Spotify
-          </button>
-          <button onclick="toggleGuestView()"
-            class="col-span-2 py-3 rounded-2xl bg-pink-50 text-fiestaDark font-bold text-xs transition active:scale-95">
-            👁 Ver la app como la ve un invitado
-          </button>
-        </div>
-
         <div class="grid grid-cols-3 gap-2">
           <div class="card-fiesta rounded-2xl p-3 text-center">
             <span class="text-xl font-black text-fiestaDark font-mono block">${songs.length}</span>
