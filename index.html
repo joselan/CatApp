@@ -594,8 +594,8 @@
             </svg>
           </div>
           <div>
-            <h4 class="text-sm font-bold text-zinc-800">Tus más escuchadas</h4>
-            <p id="spotify-connection-status" class="text-[11px] text-zinc-500 font-medium">Conectá tu Spotify y elegí desde tu propio ranking</p>
+            <h4 class="text-sm font-bold text-zinc-800">Votá desde tu Spotify</h4>
+            <p id="spotify-connection-status" class="text-[11px] text-zinc-500 font-medium">Conectá tu cuenta y elegí desde tu propio ranking</p>
           </div>
         </div>
         <button
@@ -640,15 +640,25 @@
           <!-- Resultados dinámicos de búsqueda -->
         </div>
 
-        <!-- Ranking personal: las más escuchadas de la cuenta de Spotify conectada -->
+        <!-- Solapas: tu propio ranking y el de Spotify Argentina, bien separados -->
+        <div id="rankings-tabs" class="flex gap-2">
+          <button id="btn-ranking-personal" type="button" onclick="setRankingTab('personal')"
+            class="flex-1 px-2 pt-3 pb-2.5 text-center text-base font-extrabold leading-tight rounded-t-2xl border-b-4 transition border-pink-100 text-zinc-400">
+            🏆 Tus más escuchadas
+          </button>
+          <button id="btn-ranking-arg" type="button" onclick="setRankingTab('arg')"
+            class="flex-1 px-2 pt-3 pb-2.5 text-center text-base font-extrabold leading-tight rounded-t-2xl border-b-4 transition border-fiesta bg-pink-50 text-fiestaDark">
+            🇦🇷 Spotify Argentina
+          </button>
+        </div>
+
+        <!-- Solapa 1 · Ranking personal: las más escuchadas de la cuenta de Spotify conectada -->
         <div id="top-tracks-section" class="space-y-3 hidden">
-          <div>
-            <h3 class="text-4xl text-zinc-800 font-extrabold flex items-center gap-2 flex-wrap">
-              🏆 Tus más escuchadas
-              <span id="top-tracks-count" class="text-zinc-400 font-mono text-lg"></span>
-            </h3>
+          <div class="flex items-baseline gap-2 flex-wrap">
+            <p class="text-sm text-zinc-500 font-medium">Lo que más escuchás en tu Spotify</p>
+            <span id="top-tracks-count" class="text-zinc-400 font-mono text-xs"></span>
           </div>
-          <div class="p-1.5 bg-pink-50 rounded-full flex gap-1">
+          <div id="top-tracks-filters" class="p-1.5 bg-pink-50 rounded-full flex gap-1">
             <button id="btn-top-range-short_term" onclick="setTopTracksRange('short_term')"
               class="flex-1 text-center py-4 text-2xl font-bold rounded-full transition text-zinc-500 whitespace-nowrap">
               Último mes
@@ -667,14 +677,11 @@
           </div>
         </div>
 
-        <!-- Ranking de Argentina: lo más escuchado del país (curado) -->
+        <!-- Solapa 2 · Ranking de Argentina: lo más escuchado del país (curado) -->
         <div id="arg-top-section" class="space-y-3">
-          <div>
-            <h3 class="text-2xl text-zinc-800 font-extrabold flex items-center gap-2">
-              🇦🇷 Top 50 Argentina
-              <span id="arg-top-count" class="text-zinc-400 font-mono text-sm"></span>
-            </h3>
-            <p class="text-[11px] text-zinc-500">Lo más escuchado del país.</p>
+          <div class="flex items-baseline gap-2 flex-wrap">
+            <p class="text-sm text-zinc-500 font-medium">Lo más escuchado del país 🇦🇷</p>
+            <span id="arg-top-count" class="text-zinc-400 font-mono text-xs"></span>
           </div>
           <div class="p-1.5 bg-pink-50 rounded-full flex gap-1">
             <button id="btn-arg-range-short_term" onclick="setArgTopRange('short_term')"
@@ -1217,6 +1224,11 @@
     let argTopRange = 'short_term';     // último mes por defecto
     let argTopPromises = {};            // pedidos en curso por período
     let argTopByRange = {};             // tracks resueltos por período
+
+    // Solapa activa entre los dos rankings: 'personal' (Tus más escuchadas) o
+    // 'arg' (Spotify Argentina). null = automático: si hay Spotify conectado
+    // arranca en el ranking personal; si no, en el de Argentina.
+    let activeRankingTab = null;
 
     // Cliente de Supabase (null = modo local en este teléfono)
     let sb = null;
@@ -1929,7 +1941,8 @@
         // Ya con cuenta: rearmamos el top de Argentina para traer tapas reales
         argTopPromises = {};
         argTopByRange = {};
-        // Recién conectado: derecho a su ranking de más escuchadas para ir eligiendo
+        // Recién conectado: lo llevamos a su solapa "Tus más escuchadas"
+        activeRankingTab = 'personal';
         if (currentUser) switchTab('search');
       } catch (err) {
         console.error("Error al canjear el código de Spotify:", err);
@@ -1974,8 +1987,13 @@
       // El top de Argentina se resolvió con esa cuenta: se rearma sin ella
       argTopPromises = {};
       argTopByRange = {};
+      // Sin Spotify, la solapa por defecto vuelve a ser la de Argentina
+      activeRankingTab = null;
       const topSection = document.getElementById('top-tracks-section');
+      const argSection = document.getElementById('arg-top-section');
       if (topSection) topSection.classList.add('hidden');
+      if (argSection) argSection.classList.remove('hidden');
+      syncRankingTabButtons('arg');
       updateSpotifyBannerUI();
     }
 
@@ -2086,17 +2104,79 @@
       authenticateSpotify();
     }
 
+    // ==========================================
+    // SOLAPAS DE RANKINGS (Tus más escuchadas | Spotify Argentina)
+    // Las dos listas viven una al lado de la otra como solapas: se ve una a la
+    // vez y se alterna con los botones de arriba.
+    // ==========================================
+    function rankingTabClass(active) {
+      const base = "flex-1 px-2 pt-3 pb-2.5 text-center text-base font-extrabold leading-tight rounded-t-2xl border-b-4 transition";
+      return active
+        ? base + " border-fiesta bg-pink-50 text-fiestaDark"
+        : base + " border-pink-100 text-zinc-400";
+    }
+
+    function syncRankingTabButtons(which) {
+      const personalTab = document.getElementById('btn-ranking-personal');
+      const argTab = document.getElementById('btn-ranking-arg');
+      if (personalTab) personalTab.className = rankingTabClass(which === 'personal');
+      if (argTab) argTab.className = rankingTabClass(which === 'arg');
+    }
+
+    // Solapa que corresponde mostrar: la elegida por el usuario, o la automática
+    function currentRankingTab() {
+      return activeRankingTab || (isSpotifyConnected() ? 'personal' : 'arg');
+    }
+
+    function setRankingTab(which) {
+      activeRankingTab = which;
+      applyRankingTab();
+    }
+
+    function applyRankingTab() {
+      const personalSection = document.getElementById('top-tracks-section');
+      const argSection = document.getElementById('arg-top-section');
+      if (!personalSection || !argSection) return;
+      const which = currentRankingTab();
+      const showPersonal = which === 'personal';
+      personalSection.classList.toggle('hidden', !showPersonal);
+      argSection.classList.toggle('hidden', showPersonal);
+      syncRankingTabButtons(which);
+      // Sólo dibujamos la solapa visible; la otra se dibuja al cambiar a ella
+      if (showPersonal) renderTopTracks();
+      else renderArgTop();
+    }
+
+    // Invitación a conectar Spotify dentro de la solapa "Tus más escuchadas"
+    function topTracksConnectPromptHtml() {
+      return `
+        <div class="p-6 text-center bg-zinc-50/80 rounded-3xl border-2 border-[#1DB954]/30 space-y-3">
+          <p class="text-sm text-zinc-600 leading-relaxed font-medium">
+            Conectá tu Spotify y mirá acá las canciones que más escuchás vos. Las votás con un solo toque. 🎧
+          </p>
+          <button onclick="authenticateSpotify()"
+            class="sin-borde px-5 py-2.5 rounded-full bg-[#1DB954] hover:bg-[#1ed760] text-white font-extrabold text-xs tracking-wide transition active:scale-95">
+            Conectar Spotify
+          </button>
+        </div>`;
+    }
+
     async function renderTopTracks() {
       const section = document.getElementById('top-tracks-section');
       const list = document.getElementById('top-tracks-list');
       const counter = document.getElementById('top-tracks-count');
+      const filters = document.getElementById('top-tracks-filters');
       if (!section || !list || !currentUser) return;
 
+      // La visibilidad de la solapa la decide applyRankingTab; acá sólo dibujamos.
+      // Sin Spotify conectado, mostramos la invitación a conectar dentro del panel.
       if (!isSpotifyConnected()) {
-        section.classList.add('hidden');
+        if (counter) counter.innerText = '';
+        if (filters) filters.classList.add('hidden');
+        list.innerHTML = topTracksConnectPromptHtml();
         return;
       }
-      section.classList.remove('hidden');
+      if (filters) filters.classList.remove('hidden');
 
       // Estado visual de los filtros de período
       ['short_term', 'medium_term', 'long_term'].forEach(r => {
@@ -2118,8 +2198,9 @@
           if (range !== topTracksRange) return; // cambió el período mientras cargaba
           console.error("Error al traer tus más escuchadas:", err);
           if (err.message === 'SPOTIFY_NO_AUTH') {
-            // La sesión se limpió sola: el banner de conexión ya avisa
-            section.classList.add('hidden');
+            // La sesión se limpió sola: volvemos a mostrar la invitación a conectar
+            if (filters) filters.classList.add('hidden');
+            list.innerHTML = topTracksConnectPromptHtml();
             return;
           }
           if (/scope|permis/i.test(err.message || '')) {
@@ -2293,9 +2374,9 @@
       const list = document.getElementById('arg-top-list');
       const counter = document.getElementById('arg-top-count');
       if (!section || !list || !currentUser) return;
-      section.classList.remove('hidden');
+      // La visibilidad de la solapa la decide applyRankingTab; acá sólo dibujamos.
 
-      // Estado visual de las solapas de período
+      // Estado visual de los botones de período
       ['short_term', 'medium_term', 'long_term'].forEach(r => {
         const btn = document.getElementById(`btn-arg-range-${r}`);
         if (btn) {
@@ -3497,8 +3578,7 @@
         renderSoundtrack();
       } else if (activeTab === 'search') {
         searchSpotify();
-        renderTopTracks();
-        renderArgTop();
+        applyRankingTab();
       } else if (activeTab === 'profile') {
         renderProfile();
       }
