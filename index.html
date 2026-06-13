@@ -260,6 +260,7 @@
       <span class="text-[12px] tracking-[0.45em] font-serif text-fiestaDark font-bold uppercase">MIS XV</span>
       <h1 onclick="handleSecretTap()" class="text-7xl font-cursive text-zinc-900 tracking-wide mt-1 mb-2 select-none cursor-default">Cata</h1>
       <p class="text-lg font-serif tracking-[0.3em] text-zinc-700 font-semibold">11.09.26</p>
+      <p id="login-countdown" class="mt-2 inline-block px-4 py-1 rounded-full bg-pink-50 text-fiestaDark text-xs font-extrabold tracking-wide"></p>
       <p class="mt-3 text-sm text-zinc-600 leading-relaxed px-4">
         🎶 Elegí las canciones que <strong class="text-fiestaDark">no pueden faltar</strong> en la fiesta.<br>
         El DJ arma la noche con los temas más votados.
@@ -613,6 +614,9 @@
     <!-- VISTA 2: AÑADIR & CONECTAR CON SPOTIFY REAL -->
     <div id="tab-search" class="tab-content space-y-5 hidden">
 
+      <!-- Confirmación de asistencia del invitado (solo si entró con su código único) -->
+      <div id="rsvp-card" class="hidden"></div>
+
       <!-- Panel: conectar tu Spotify para ver tus más escuchadas -->
       <div id="spotify-api-status-banner" class="p-4 rounded-2xl bg-zinc-50 border border-pink-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
@@ -923,6 +927,9 @@
     // Después de este momento los invitados ya no pueden votar ni cambiar votos.
     const VOTING_DEADLINE = '2026-09-04T23:59:00-03:00';
 
+    // Fecha y hora de la fiesta (para la cuenta regresiva de la portada)
+    const PARTY_DATE = '2026-09-11T21:00:00-03:00';
+
     // ==========================================
     // LISTA DE INVITADOS (IMPORTADA DEL EXCEL) — 91 invitaciones, 175 personas
     // Cada invitación tiene un código único (editable desde el panel 👥
@@ -1037,11 +1044,15 @@
 
     // ==========================================
     // TOP 50 ARGENTINA (CURADO)
-    // Spotify no publica un ranking de Argentina por período, así que armamos
-    // a mano la lista de lo más escuchado del país para cada ventana de tiempo.
-    // Cada tema se "resuelve" después contra Spotify (búsqueda real) para traer
-    // la tapa, el preview y poder pedirlo/votarlo igual que en el buscador.
-    // Para sumar o cambiar temas: editá título y artista y listo.
+    // Spotify ya no permite leer sus playlists oficiales ("Top 50 Argentina")
+    // desde apps como esta, así que armamos a mano la lista de lo más escuchado
+    // del país para cada ventana de tiempo. Cada tema se "resuelve" después
+    // contra Spotify (búsqueda real) para traer la tapa, el preview y poder
+    // pedirlo/votarlo igual que en el buscador.
+    //
+    // ⚠️ MANTENIMIENTO: esta lista envejece. Conviene repasarla la semana de la
+    //    fiesta. Última revisión: junio 2026. Para sumar/cambiar temas, editá
+    //    título y artista de cada línea (el orden es el ranking) y listo.
     // ==========================================
     const ARG_FALLBACK_COVERS = [
       "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=150&q=80",
@@ -1394,9 +1405,11 @@
 
       // Solo entran códigos reales: el general de la fiesta, los de admin,
       // o un código único de la lista de invitados
-      const isValidCode = ADMIN_CODES.includes(code)
-        || PARTY_CODES.includes(code)
-        || !!(await findGuestByCode(code));
+      const isGeneral = ADMIN_CODES.includes(code) || PARTY_CODES.includes(code);
+      // Si entró con su código único, lo asociamos a su invitación para que
+      // pueda confirmar la asistencia (RSVP) desde la app.
+      const matchedGuest = isGeneral ? null : await findGuestByCode(code);
+      const isValidCode = isGeneral || !!matchedGuest;
 
       if (!isValidCode) {
         showToast("Ese código de invitación no es válido. Revisá tu invitación.", "error");
@@ -1414,7 +1427,9 @@
       currentUser = {
         code: code,
         name: name,
-        id: deviceId
+        id: deviceId,
+        guestId: matchedGuest ? matchedGuest.id : null,
+        guestName: matchedGuest ? matchedGuest.name : null
       };
 
       localStorage.setItem('catapp_user', JSON.stringify(currentUser));
@@ -1437,8 +1452,19 @@
     function showLogin() {
       document.getElementById('login-screen').classList.remove('hidden');
       document.getElementById('app-screen').classList.add('hidden');
+      renderCountdown();
       stopPlayback();
       closeSpotifyPlayer();
+    }
+
+    // Cuenta regresiva de la portada: "Faltan N días" para la fiesta
+    function renderCountdown() {
+      const el = document.getElementById('login-countdown');
+      if (!el) return;
+      const ms = new Date(PARTY_DATE).getTime() - Date.now();
+      if (ms <= 0) { el.textContent = '¡Hoy es la fiesta! 🎉'; return; }
+      const days = Math.ceil(ms / 86400000);
+      el.textContent = days === 1 ? '¡Falta 1 día! 🪩' : `Faltan ${days} días 🪩`;
     }
 
     // ¿La sesión es de un admin de verdad (por código o por Google)?
@@ -3596,12 +3622,71 @@
       if (activeTab === 'soundtrack') {
         renderSoundtrack();
       } else if (activeTab === 'search') {
+        renderRsvp();
         searchSpotify();
         applyRankingTab();
       } else if (activeTab === 'profile') {
         renderProfile();
       }
       renderDjMode();
+    }
+
+    // ==========================================
+    // CONFIRMACIÓN DE ASISTENCIA DEL INVITADO (RSVP)
+    // Solo para quien entró con su código único (queda asociado a su invitación).
+    // El cambio se guarda en la misma lista que ven los admins.
+    // ==========================================
+    function renderRsvp() {
+      const box = document.getElementById('rsvp-card');
+      if (!box) return;
+      if (!currentUser || isAdmin() || !currentUser.guestId) {
+        box.classList.add('hidden');
+        box.innerHTML = '';
+        return;
+      }
+      const guest = guests.find(g => g.id === currentUser.guestId);
+      if (!guest) { box.classList.add('hidden'); return; }
+
+      const conf = guest.confirmed || 'pendiente';
+      let inner;
+      if (conf === 'si') {
+        inner = `
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <span class="text-sm font-bold text-emerald-600">✅ ¡Confirmaste tu asistencia! Te esperamos 🎉</span>
+            <button onclick="setMyRsvp('no')" class="sin-borde text-xs text-zinc-400 underline">No voy a poder ir</button>
+          </div>`;
+      } else if (conf === 'no') {
+        inner = `
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <span class="text-sm font-bold text-zinc-500">Avisaste que no vas a poder venir 💔</span>
+            <button onclick="setMyRsvp('si')" class="sin-borde text-xs text-fiestaDark underline font-bold">¡Cambié de planes, sí voy!</button>
+          </div>`;
+      } else {
+        inner = `
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="setMyRsvp('si')" class="btn-fiesta font-extrabold text-sm py-3 rounded-full transition active:scale-95">✅ ¡Sí, voy!</button>
+            <button onclick="setMyRsvp('no')" class="sin-borde bg-zinc-100 text-zinc-600 font-bold text-sm py-3 rounded-full transition active:scale-95">No puedo</button>
+          </div>`;
+      }
+
+      box.classList.remove('hidden');
+      box.innerHTML = `
+        <div class="card-fiesta rounded-3xl p-4 space-y-3">
+          <div>
+            <h3 class="text-base font-extrabold text-zinc-900">📩 ${escapeHtml(guest.name)}</h3>
+            <p class="text-xs text-zinc-500">¿Vas a poder venir a los XV de Cata?</p>
+          </div>
+          ${inner}
+        </div>`;
+    }
+
+    function setMyRsvp(value) {
+      if (!currentUser || !currentUser.guestId) return;
+      updateGuest(currentUser.guestId, { confirmed: value });
+      renderRsvp();
+      showToast(value === 'si'
+        ? '¡Genial! Confirmaste tu asistencia 🎉'
+        : 'Listo, avisaste que no vas a poder venir.', value === 'si' ? 'success' : 'info');
     }
 
     // ==========================================
