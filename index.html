@@ -1229,6 +1229,7 @@
     // Variables de Estado de la Sesión
     let currentUser = null;
     let songs = [];
+    let blockedSongs = [];   // temas vetados por los admins (nadie puede pedirlos)
     let activeTab = 'soundtrack';
     let currentSearchMode = 'spotify';
     let selectedImportTracks = {};
@@ -1348,10 +1349,12 @@
       if (isSharedMode()) {
         // Lista compartida de la fiesta: viene del servidor y se sincroniza en vivo
         await loadPartySongs();
+        await loadBlockedSongs();
         await loadGuests();
         startPartySync();
       } else {
         loadLocalGuests();
+        loadLocalBlocked();
         const savedSongs = localStorage.getItem('catapp_songs');
         if (savedSongs) {
           songs = JSON.parse(savedSongs);
@@ -2604,6 +2607,7 @@
       clearTimeout(partyRefreshTimer);
       partyRefreshTimer = setTimeout(async () => {
         await loadPartySongs();
+        await loadBlockedSongs();
         // La lista de invitados y las mesas solo las miran los admins
         if (isAdmin()) {
           await loadGuests();
@@ -2622,6 +2626,7 @@
     function startPartySync() {
       sb.channel('party-live')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, schedulePartyRefresh)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'blocked_songs' }, schedulePartyRefresh)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, schedulePartyRefresh)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'guests' }, schedulePartyRefresh)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'mesas' }, schedulePartyRefresh)
@@ -2670,6 +2675,12 @@
 
       if (!isAdmin() && (votingClosed() || myVoteCount() >= MAX_VOTES_PER_GUEST)) {
         if (!silent) checkVotingAllowed(true);
+        return false;
+      }
+
+      // Tema vetado por los organizadores: no se puede pedir ni votar
+      if (findBlocked(track)) {
+        if (!silent) showToast("Esa canción fue bloqueada por los organizadores. 🚫", "warning");
         return false;
       }
 
@@ -2750,6 +2761,142 @@
       });
       saveSongsToStorage();
       return 'added';
+    }
+
+    // ==========================================
+    // CANCIONES BLOQUEADAS POR LOS ADMINS
+    // Los organizadores pueden vetar temas para que ningún invitado los pida
+    // (ni los vote). El veto se comparte entre los 4 admins cuando Supabase
+    // está activo, o vive en este teléfono en modo local, igual que la lista.
+    // ==========================================
+
+    // Título normalizado para comparar (misma idea que el alta de canciones)
+    function songTitleKey(item) {
+      return (item.title || '').toLowerCase().trim();
+    }
+
+    // El id de Spotify llega como spotifyId (en una canción) o id (en un
+    // resultado de búsqueda con genre === 'Spotify')
+    function songSpotifyId(item) {
+      return item.spotifyId || (item.genre === 'Spotify' ? item.id : null) || null;
+    }
+
+    // Devuelve el veto que corresponde a una canción/resultado, o undefined
+    function findBlocked(item) {
+      const titleKey = songTitleKey(item);
+      const sid = songSpotifyId(item);
+      return blockedSongs.find(b =>
+        (b.titleKey && b.titleKey === titleKey) ||
+        (sid && b.spotifyId && b.spotifyId === sid)
+      );
+    }
+
+    function mapBlockedRow(row) {
+      return {
+        id: row.id,
+        titleKey: row.title_key,
+        spotifyId: row.spotify_id || null,
+        title: row.title,
+        artist: row.artist || '',
+        blockedBy: row.blocked_by || ''
+      };
+    }
+
+    function saveLocalBlocked() {
+      if (isSharedMode()) return;
+      localStorage.setItem('catapp_blocked', JSON.stringify(blockedSongs));
+    }
+
+    function loadLocalBlocked() {
+      try {
+        blockedSongs = JSON.parse(localStorage.getItem('catapp_blocked') || '[]');
+      } catch (e) {
+        blockedSongs = [];
+      }
+    }
+
+    async function loadBlockedSongs() {
+      if (!isSharedMode()) { loadLocalBlocked(); return true; }
+      const { data, error } = await sb.from('blocked_songs').select('*');
+      if (error) {
+        // Si la tabla todavía no existe (Supabase recién activado, falta correr
+        // el SQL), no rompemos la app: simplemente no hay bloqueos todavía.
+        console.warn("No se pudo cargar la lista de bloqueadas:", error.message);
+        return false;
+      }
+      blockedSongs = data.map(mapBlockedRow);
+      return true;
+    }
+
+    // Veta una canción: nadie podrá pedirla. Si ya estaba pedida, la saca de la lista.
+    async function blockSong(item) {
+      if (!isAdmin() || !item) return;
+      const titleKey = songTitleKey(item);
+      if (!titleKey) return;
+      if (findBlocked(item)) {
+        showToast("Esa canción ya estaba bloqueada.", "info");
+        return;
+      }
+      const sid = songSpotifyId(item);
+      const title = item.title;
+      const artist = item.artist || '';
+
+      // Si la canción ya fue pedida por alguien, también la quitamos de la lista
+      const existing = songs.find(s =>
+        songTitleKey(s) === titleKey || (sid && s.spotifyId && s.spotifyId === sid)
+      );
+
+      if (isSharedMode()) {
+        const { data, error } = await sb.from('blocked_songs')
+          .insert({ title_key: titleKey, spotify_id: sid, title: title, artist: artist, blocked_by: currentUser.name })
+          .select().single();
+        if (error && error.code !== '23505') {  // 23505 = ya estaba (otro admin la bloqueó recién)
+          console.error("Error al bloquear la canción:", error);
+          showToast("No se pudo bloquear la canción. Probá de nuevo.", "error");
+          return;
+        }
+        if (data) blockedSongs.push(mapBlockedRow(data));
+        if (existing) {
+          await sb.from('songs').delete().eq('id', existing.id);
+          songs = songs.filter(s => s.id !== existing.id);
+        }
+      } else {
+        blockedSongs.push({ id: 'blk_' + Date.now(), titleKey, spotifyId: sid, title, artist, blockedBy: currentUser.name });
+        saveLocalBlocked();
+        if (existing) {
+          songs = songs.filter(s => s.id !== existing.id);
+          saveSongsToStorage();
+        }
+      }
+
+      showToast(`"${title}" bloqueada: ningún invitado podrá pedirla. 🚫`, "success");
+      renderAll();
+    }
+
+    // Levanta el veto: la canción vuelve a poder pedirse
+    async function unblockSong(key) {
+      const entry = blockedSongs.find(b => b.id === key || b.titleKey === key);
+      if (!entry) return;
+      if (isSharedMode()) {
+        const { error } = await sb.from('blocked_songs').delete().eq('id', entry.id);
+        if (error) {
+          console.error("Error al desbloquear:", error);
+          showToast("No se pudo desbloquear. Probá de nuevo.", "error");
+          return;
+        }
+      }
+      blockedSongs = blockedSongs.filter(b => b !== entry);
+      saveLocalBlocked();
+      showToast(`"${entry.title}" desbloqueada. Ya se puede pedir de nuevo.`, "info");
+      renderAll();
+    }
+
+    // Atajos para los botones de la interfaz (buscador y ranking)
+    function blockSearchResult(index) {
+      blockSong(window[`track_search_${index}`]);
+    }
+    function blockSongFromList(songId) {
+      blockSong(songs.find(s => s.id === songId));
     }
 
     // ==========================================
@@ -3761,6 +3908,24 @@
             `).join('')}
           </div>
         </details>
+
+        <details class="card-fiesta rounded-2xl overflow-hidden">
+          <summary class="px-4 py-3 text-xs text-zinc-700 font-extrabold cursor-pointer select-none">
+            🚫 Canciones bloqueadas (${blockedSongs.length})
+          </summary>
+          <div class="px-4 pb-3 space-y-2 max-h-56 overflow-y-auto no-scrollbar">
+            ${blockedSongs.length === 0 ? '<p class="text-xs text-zinc-400 font-serif">No bloqueaste ninguna canción. Podés bloquear temas desde el buscador (botón 🚫 Bloquear) o desde este ranking.</p>' : blockedSongs.map(b => `
+              <div class="border-t border-zinc-100 pt-2 flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-zinc-800 truncate">${escapeHtml(b.title)}</p>
+                  ${b.artist ? `<p class="text-[10px] text-zinc-500 truncate">${escapeHtml(b.artist)}</p>` : ''}
+                </div>
+                <button onclick="unblockSong('${b.id}')"
+                  class="sin-borde px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-extrabold shrink-0">Permitir</button>
+              </div>
+            `).join('')}
+          </div>
+        </details>
       `;
     }
 
@@ -3849,21 +4014,28 @@
               </div>
             </div>
 
-            <!-- Corazón de voto -->
-            <button
-              onclick="voteSong('${song.id}')"
-              title="${isVoted ? 'Quitar mi voto' : 'Votar este tema'}"
-              class="flex flex-col items-center justify-center gap-0.5 px-4 py-3 rounded-2xl transition duration-300 active:scale-95 shrink-0 flex-none ${
-                isVoted
-                  ? 'btn-fiesta'
-                  : 'bg-pink-50 text-fiestaDark'
-              }"
-            >
-              <svg class="w-5 h-5 ${isVoted ? 'fill-current' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span class="text-base font-black font-mono leading-none">${song.votes}</span>
-            </button>
+            <div class="flex items-center gap-2 shrink-0 flex-none">
+              <!-- Corazón de voto -->
+              <button
+                onclick="voteSong('${song.id}')"
+                title="${isVoted ? 'Quitar mi voto' : 'Votar este tema'}"
+                class="flex flex-col items-center justify-center gap-0.5 px-4 py-3 rounded-2xl transition duration-300 active:scale-95 ${
+                  isVoted
+                    ? 'btn-fiesta'
+                    : 'bg-pink-50 text-fiestaDark'
+                }"
+              >
+                <svg class="w-5 h-5 ${isVoted ? 'fill-current' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span class="text-base font-black font-mono leading-none">${song.votes}</span>
+              </button>
+              ${isAdmin() ? `
+              <button onclick="blockSongFromList('${song.id}')"
+                title="Bloquear: lo saca de la lista y ningún invitado podrá pedirlo"
+                class="sin-borde w-10 h-10 rounded-full flex items-center justify-center bg-zinc-100 text-zinc-500 hover:text-red-500 border border-zinc-200 text-base">🚫</button>
+              ` : ''}
+            </div>
           </div>
         `;
       });
@@ -3992,6 +4164,7 @@
           (track.genre === 'Spotify' && s.spotifyId && s.spotifyId === track.id)
         );
         const votedByMe = !!(existing && existing.voters && existing.voters.includes(currentUser.id));
+        const blockedEntry = findBlocked(track);
         window[`track_search_${index}`] = track;
 
         // Corazón para votar; tilde cuando ya la votaste
@@ -4007,6 +4180,35 @@
           </button>
         ` : '';
 
+        // Botón de corazón (pedir / votar / quitar voto)
+        const heartButton = `
+            <button
+              onclick="${votedByMe ? `voteSong('${existing.id}')` : `addSongFromSearch(${index})`}"
+              title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
+              class="w-12 h-12 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
+            >
+              <svg class="w-6 h-6 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                ${icon}
+              </svg>
+            </button>`;
+
+        // Acciones a la derecha de cada resultado:
+        // - Admin: corazón (si no está bloqueada) + botón Bloquear/Permitir.
+        // - Invitado: corazón, salvo que esté bloqueada (ve un cartel "Bloqueada").
+        let actions;
+        if (isAdmin()) {
+          const blockBtn = blockedEntry
+            ? `<button onclick="unblockSong('${blockedEntry.id}')" title="Permitir que la pidan de nuevo"
+                 class="sin-borde px-3 h-12 rounded-full flex items-center justify-center text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">✅ Permitir</button>`
+            : `<button onclick="blockSearchResult(${index})" title="Bloquear: que ningún invitado la pueda pedir"
+                 class="sin-borde px-3 h-12 rounded-full flex items-center justify-center text-xs font-extrabold bg-zinc-100 text-zinc-600 border border-zinc-200 hover:text-red-500 shrink-0">🚫 Bloquear</button>`;
+          actions = `<div class="flex items-center gap-2 shrink-0">${blockedEntry ? '' : heartButton}${blockBtn}</div>`;
+        } else if (blockedEntry) {
+          actions = `<span class="px-3 py-2 rounded-full text-xs font-bold bg-zinc-100 text-zinc-400 border border-zinc-200 shrink-0">🚫 Bloqueada</span>`;
+        } else {
+          actions = heartButton;
+        }
+
         resultsContainer.innerHTML += `
           <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition animate-fadeIn">
             <div class="flex items-center gap-3.5 min-w-0">
@@ -4017,19 +4219,11 @@
               <div class="min-w-0">
                 <h4 class="text-base font-extrabold text-zinc-800 truncate leading-tight">${escapeHtml(track.title)}</h4>
                 <p class="text-sm text-zinc-500 truncate">${escapeHtml(track.artist)}</p>
-                ${votedByMe ? '<p class="text-xs text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : ''}
+                ${blockedEntry ? '<p class="text-xs text-zinc-400 font-bold mt-0.5">🚫 Bloqueada</p>' : (votedByMe ? '<p class="text-xs text-fiestaDark font-bold mt-0.5">✓ Ya la votaste</p>' : '')}
               </div>
             </div>
 
-            <button
-              onclick="${votedByMe ? `voteSong('${existing.id}')` : `addSongFromSearch(${index})`}"
-              title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
-              class="w-12 h-12 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
-            >
-              <svg class="w-6 h-6 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                ${icon}
-              </svg>
-            </button>
+            ${actions}
           </div>
         `;
       });

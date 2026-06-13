@@ -67,12 +67,27 @@ create table if not exists public.mesas (
   created_at timestamptz not null default now()
 );
 
+-- Canciones bloqueadas: temas que los admins vetan para que ningún
+-- invitado pueda pedirlos ni votarlos.
+-- title_key: título en minúsculas (clave para comparar y evitar duplicados).
+-- spotify_id: id del tema en Spotify, cuando se bloqueó desde el catálogo real.
+create table if not exists public.blocked_songs (
+  id uuid primary key default gen_random_uuid(),
+  title_key text not null unique,
+  spotify_id text,
+  title text not null,
+  artist text,
+  blocked_by text,
+  created_at timestamptz not null default now()
+);
+
 -- Seguridad a nivel de fila: la fiesta es abierta para los invitados
 -- (la clave "anon" solo permite lo que definen estas políticas)
 alter table public.songs enable row level security;
 alter table public.votes enable row level security;
 alter table public.guests enable row level security;
 alter table public.mesas enable row level security;
+alter table public.blocked_songs enable row level security;
 
 create policy "lectura publica de canciones"  on public.songs for select using (true);
 create policy "invitados agregan canciones"   on public.songs for insert with check (true);
@@ -94,8 +109,13 @@ create policy "alta de mesas"     on public.mesas for insert with check (true);
 create policy "editar mesas"      on public.mesas for update using (true) with check (true);
 create policy "borrar mesas"      on public.mesas for delete using (true);
 
+create policy "lectura de bloqueadas" on public.blocked_songs for select using (true);
+create policy "admins bloquean"       on public.blocked_songs for insert with check (true);
+create policy "admins desbloquean"    on public.blocked_songs for delete using (true);
+
 -- Sincronización en vivo: los cambios se transmiten a todos los teléfonos
 alter publication supabase_realtime add table public.songs;
 alter publication supabase_realtime add table public.votes;
 alter publication supabase_realtime add table public.guests;
 alter publication supabase_realtime add table public.mesas;
+alter publication supabase_realtime add table public.blocked_songs;
