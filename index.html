@@ -492,6 +492,7 @@
         <div>
           <h2 class="text-zinc-900 leading-none"><span class="font-cursive text-6xl">Cata</span> <span class="font-serif text-3xl tracking-[0.15em] text-fiestaDark font-bold">XV</span></h2>
           <p class="text-2xl text-zinc-500 font-semibold mt-1">11.09.26</p>
+          <p id="header-greeting" class="hidden text-2xl text-fiestaDark font-bold mt-1"></p>
         </div>
       </div>
 
@@ -1605,6 +1606,10 @@
         .classList.toggle('hidden', !(realAdmin() && viewingAsGuest));
 
       document.getElementById('user-display-name').innerText = currentUser.name;
+      // Saludo visible en el header con el nombre de quien entró
+      const greeting = document.getElementById('header-greeting');
+      greeting.innerText = `¡Hola ${currentUser.name}!`;
+      greeting.classList.remove('hidden');
       document.getElementById('user-display-code').innerText =
         currentUser.code === 'ADMIN' ? 'ADMIN · GOOGLE' : currentUser.code + (isAdmin() ? ' · ADMIN' : '');
       document.getElementById('profile-name').innerText = currentUser.name;
