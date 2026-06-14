@@ -56,8 +56,16 @@ Guiarlo paso a paso, en orden:
    canciones, votos, invitados y mesas. El "admin" hoy solo lo controla el
    navegador, no la base. El arreglo correcto depende de tener el login de
    Google enchufado a Supabase Auth (pendiente #2) para distinguir admins
-   a nivel base. A revisar y aplicar juntos en la sesión de la compu:
-   restringir lectura/borrado de `guests` y limitar escrituras masivas.
+   a nivel base.
+   ➜ YA ESTÁ PREPARADO el SQL en `supabase/seguridad-rls.sql`: cierra
+   `guests` y `mesas` para que solo los 4 admins (con Google) las lean/
+   escriban, y agrega la función `validar_codigo_invitado` para que un
+   invitado valide su código sin ver toda la lista. `songs` y `votes`
+   quedan abiertas a propósito (los invitados votan anónimos).
+   PASOS en co-work: (a) activar Google en Supabase Auth (pendiente #2);
+   (b) cambiar 1 línea de `findGuestByCode` en index.html para usar la
+   función (está explicado en el .sql); (c) pegar y ejecutar el .sql.
+   NO aplicarlo antes del login de Google: dejaría a los admins afuera.
 
 ### ✅ Hecho: lista de invitados con códigos únicos y QR
 
