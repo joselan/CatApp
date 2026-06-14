@@ -2768,6 +2768,15 @@
     // Los organizadores pueden vetar temas para que ningún invitado los pida
     // (ni los vote). El veto se comparte entre los 4 admins cuando Supabase
     // está activo, o vive en este teléfono en modo local, igual que la lista.
+    //
+    // ⏳ PENDIENTE (José, para retomar en la compu cuando quieras):
+    //    Supabase YA está activo (ver SUPABASE_URL arriba), pero falta crear
+    //    la tabla de bloqueadas en la base para que esta función funcione.
+    //    Es 1 solo paso: entrar a Supabase → SQL Editor → pegar y correr el
+    //    archivo "supabase/bloqueadas.sql" de este repo (botón Run, tiene que
+    //    decir "Success"). Recién después de eso los botones 🚫 Bloquear /
+    //    ✅ Permitir van a andar y el veto se comparte entre los 4 admins.
+    //    (Avisale a Claude cuando quieras y te guía paso a paso.)
     // ==========================================
 
     // Título normalizado para comparar (misma idea que el alta de canciones)
