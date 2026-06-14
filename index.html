@@ -13,8 +13,10 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
 
-  <!-- Tailwind CSS CDN para renderizado inmediato -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS compilado (CSS estático: carga al instante, sin parpadeo).
+       Para regenerarlo si cambian las clases:
+       npx tailwindcss@3.4.17 -c build/tailwind.config.js -i build/input.css -o catapp.css --minify -->
+  <link rel="stylesheet" href="catapp.css">
 
   <!-- Supabase JS: playlist compartida en vivo entre todos los invitados -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -26,29 +28,9 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
   <!-- Google Fonts idénticas a la invitación física -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Alex+Brush&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Plus Jakarta Sans', 'sans-serif'],
-            serif: ['Playfair Display', 'serif'],
-            cursive: ['Alex Brush', 'cursive'],
-          },
-          colors: {
-            darkbg: '#000000',
-            glass: 'rgba(12, 12, 16, 0.76)',
-            silverGlow: '#E2E8F0',
-            fiesta: '#ec4899',
-            fiestaDark: '#be185d',
-            fiestaViolet: '#8b5cf6',
-          }
-        }
-      }
-    }
-  </script>
 
   <style>
     body {
@@ -1282,6 +1264,13 @@
         .replace(/'/g, '&#39;');
     }
 
+    // URL de imagen segura: solo deja pasar https (evita que una tapa
+    // maliciosa cargada en la base inyecte código). Devuelve '' si no es válida.
+    function safeImg(url) {
+      const u = String(url ?? '');
+      return /^https:\/\//i.test(u) ? escapeHtml(u) : '';
+    }
+
     // Sistema de Alertas (Toasts)
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
@@ -2298,7 +2287,7 @@
             <div class="flex items-center gap-3.5 min-w-0">
               <span class="w-8 text-center text-lg font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
               <div class="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
-                <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
+                <img src="${safeImg(track.coverUrl)}" alt="Tapa de ${escapeHtml(track.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover" />
                 <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                   <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
@@ -2475,7 +2464,7 @@
             <div class="flex items-center gap-3.5 min-w-0">
               <span class="w-8 text-center text-lg font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
               <div class="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
-                <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
+                <img src="${safeImg(track.coverUrl)}" alt="Tapa de ${escapeHtml(track.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover" />
                 <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                   <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
@@ -3780,7 +3769,7 @@
             <div class="flex items-center gap-4 min-w-0">
               <button onclick="toggleTrackPlayback('${top.id}')" title="Escuchar"
                 class="sin-borde relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-white/20 shadow-lg">
-                <img src="${top.coverUrl}" alt="Cover" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
+                <img src="${safeImg(top.coverUrl)}" alt="Tapa de ${escapeHtml(top.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
                 <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                   <svg class="w-7 h-7 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     ${isPlaying ? '<path d="M6 6h4v12H6zM14 6h4v12h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}
@@ -3815,17 +3804,17 @@
         return;
       }
 
-      sorted.forEach((song, idx) => {
+      listContainer.innerHTML = sorted.map((song, idx) => {
         const isVoted = song.voters && song.voters.includes(currentUser.id);
         const isPlaying = playingTrackId === song.id;
 
-        listContainer.innerHTML += `
+        return `
           <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition flex-nowrap animate-fadeIn">
             <div class="flex items-center gap-3.5 min-w-0 flex-1">
               <span class="w-8 text-center text-lg font-black ${idx < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${idx + 1}</span>
               <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar"
                 class="sin-borde relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 bg-zinc-100 flex-none">
-                <img src="${song.coverUrl}" alt="Cover" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
+                <img src="${safeImg(song.coverUrl)}" alt="Tapa de ${escapeHtml(song.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
                 <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                   ${isPlaying ? `
                     <span class="flex gap-[3px] items-end h-6 w-6">
@@ -3866,7 +3855,7 @@
             </button>
           </div>
         `;
-      });
+      }).join('');
     }
 
     async function voteSong(songId, options = {}) {
@@ -3985,7 +3974,7 @@
       const resultsContainer = document.getElementById('search-results');
       resultsContainer.innerHTML = '';
 
-      tracks.forEach((track, index) => {
+      resultsContainer.innerHTML = tracks.map((track, index) => {
         // Si ya está pedida, el botón suma un voto; si ya la votaste, queda tildada
         const existing = songs.find(s =>
           s.title.toLowerCase() === track.title.toLowerCase() ||
@@ -4007,11 +3996,11 @@
           </button>
         ` : '';
 
-        resultsContainer.innerHTML += `
+        return `
           <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition animate-fadeIn">
             <div class="flex items-center gap-3.5 min-w-0">
               <div class="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
-                <img src="${track.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
+                <img src="${safeImg(track.coverUrl)}" alt="Tapa de ${escapeHtml(track.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover" />
                 ${playOverlay}
               </div>
               <div class="min-w-0">
@@ -4032,7 +4021,7 @@
             </button>
           </div>
         `;
-      });
+      }).join('');
     }
 
     async function addSongFromSearch(globalIndex) {
@@ -4071,12 +4060,12 @@
           </div>
         `;
       } else {
-        myVotes.forEach(song => {
-          myVotesBox.innerHTML += `
+        myVotesBox.innerHTML = myVotes.map(song => {
+          return `
             <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition">
               <div class="flex items-center gap-3.5 min-w-0">
                 <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" class="sin-borde relative w-12 h-12 rounded-2xl overflow-hidden bg-zinc-200 flex-none">
-                  <img src="${song.coverUrl}" alt="Cover" class="w-full h-full object-cover" />
+                  <img src="${safeImg(song.coverUrl)}" alt="Tapa de ${escapeHtml(song.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover" />
                   <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                     <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                   </span>
@@ -4099,7 +4088,7 @@
               </button>
             </div>
           `;
-        });
+        }).join('');
       }
 
       const mySongsBox = document.getElementById('my-songs-container');
@@ -4114,11 +4103,11 @@
         return;
       }
 
-      mine.forEach(song => {
-        mySongsBox.innerHTML += `
+      mySongsBox.innerHTML = mine.map(song => {
+        return `
           <div class="flex items-center justify-between gap-3 p-2 hover:bg-zinc-100/20 rounded-xl transition">
             <div class="flex items-center gap-3 min-w-0">
-              <img src="${song.coverUrl}" alt="Cover" class="w-9 h-9 rounded-lg object-cover bg-zinc-200" />
+              <img src="${safeImg(song.coverUrl)}" alt="Tapa de ${escapeHtml(song.title)}" loading="lazy" decoding="async" class="w-9 h-9 rounded-lg object-cover bg-zinc-200" />
               <div class="min-w-0">
                 <h4 class="text-xs font-bold text-zinc-800 truncate">${escapeHtml(song.title)}</h4>
                 <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
@@ -4135,7 +4124,7 @@
             </button>
           </div>
         `;
-      });
+      }).join('');
     }
 
     async function deleteMySong(songId) {
@@ -4541,5 +4530,15 @@
 
   <!-- INFORME DE INVITADOS: solo visible al imprimir / guardar como PDF -->
   <div id="print-report"></div>
+
+  <!-- Service Worker: la app abre al instante y funciona aunque la señal
+       esté saturada en la fiesta (no afecta los datos en vivo de Supabase). -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function () { /* sin red: se ignora */ });
+      });
+    }
+  </script>
 </body>
 </html>

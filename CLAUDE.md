@@ -49,6 +49,15 @@ Guiarlo paso a paso, en orden:
    de Spotify → app CatApp → Settings → User Management → agregar
    nombre + email de la cuenta de Spotify de Cata, Seba y Mari (para
    que puedan usar CONECTAR SPOTIFY / exportar playlist).
+4. **🔒 Endurecer la seguridad de Supabase (hacerlo en co-work, con José).**
+   Hoy las reglas (RLS) en `supabase/schema.sql` son todas `using(true)`:
+   con la clave anon (pública en `index.html`) cualquiera puede LEER toda
+   la lista de invitados (nombres de menores + notas) y BORRAR/EDITAR
+   canciones, votos, invitados y mesas. El "admin" hoy solo lo controla el
+   navegador, no la base. El arreglo correcto depende de tener el login de
+   Google enchufado a Supabase Auth (pendiente #2) para distinguir admins
+   a nivel base. A revisar y aplicar juntos en la sesión de la compu:
+   restringir lectura/borrado de `guests` y limitar escrituras masivas.
 
 ### ✅ Hecho: lista de invitados con códigos únicos y QR
 
