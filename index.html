@@ -141,6 +141,25 @@
     /* El input enfocado brilla en rosa (en los dos temas) */
     input:focus, textarea:focus, select:focus { box-shadow: 0 0 0 3px rgba(236,72,153,0.22); }
 
+    /* ACCESIBILIDAD: anillo de foco visible al navegar con teclado
+       (no aparece al tocar con el dedo ni al clickear con el mouse). */
+    a:focus-visible, button:focus-visible, [role="button"]:focus-visible,
+    input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+      outline: 3px solid #a855f7;
+      outline-offset: 2px;
+    }
+
+    /* ACCESIBILIDAD: si la persona pidió "reducir movimiento" en su celular,
+       se calman las animaciones (tapas que giran, destellos, etc.). */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     /* Luces de fondo estilo Bokeh */
     .bokeh-light {
       position: absolute;
@@ -253,7 +272,7 @@
     <div class="w-full glass-panel p-6 rounded-3xl relative z-10 mt-6">
       <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
         <div>
-          <label class="block text-xs text-zinc-600 font-bold mb-1.5">Tu código de invitación</label>
+          <label for="login-code" class="block text-xs text-zinc-600 font-bold mb-1.5">Tu código de invitación</label>
           <div class="relative">
             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-pink-400">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -271,7 +290,7 @@
         </div>
 
         <div>
-          <label class="block text-xs text-zinc-600 font-bold mb-1.5">Tu nombre o apodo</label>
+          <label for="login-name" class="block text-xs text-zinc-600 font-bold mb-1.5">Tu nombre o apodo</label>
           <div class="relative">
             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-pink-400">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -341,6 +360,7 @@
           type="text"
           id="guests-search"
           oninput="renderGuestsPanel()"
+          aria-label="Buscar invitado o código"
           placeholder="Buscar invitado o código..."
           class="w-full bg-zinc-50 border-2 border-pink-200 focus:border-fiesta rounded-2xl py-3 pl-10 pr-4 text-xs text-black placeholder-zinc-400 outline-none"
         />
@@ -378,7 +398,7 @@
       <div id="mesas-list" class="space-y-3"></div>
 
       <div class="pt-2">
-        <h4 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pb-2">Sin mesa asignada</h4>
+        <h4 class="text-[11px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pb-2">Sin mesa asignada</h4>
         <div id="mesas-unseated" class="flex flex-wrap gap-2"></div>
       </div>
     </div>
@@ -391,35 +411,35 @@
 
       <div class="space-y-3 text-left">
         <div>
-          <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Nombre de la invitación</label>
+          <label for="gf-name" class="block text-[11px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Nombre de la invitación</label>
           <input type="text" id="gf-name" placeholder="Ej. FAMILIA PÉREZ"
             class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
         </div>
         <div>
-          <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Grupo</label>
+          <label for="gf-group" class="block text-[11px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Grupo</label>
           <input type="text" id="gf-group" list="group-options" placeholder="Ej. Colegio Cata"
             class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
           <datalist id="group-options"></datalist>
         </div>
         <div class="grid grid-cols-3 gap-2">
           <div>
-            <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Adultos</label>
+            <label for="gf-adults" class="block text-[11px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Adultos</label>
             <input type="number" id="gf-adults" min="0" value="0"
               class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
           </div>
           <div>
-            <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Chicos</label>
+            <label for="gf-kids" class="block text-[11px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Chicos</label>
             <input type="number" id="gf-kids" min="0" value="0"
               class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
           </div>
           <div>
-            <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Men. de 5</label>
+            <label for="gf-under5" class="block text-[11px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Men. de 5</label>
             <input type="number" id="gf-under5" min="0" value="0"
               class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black outline-none" />
           </div>
         </div>
         <div>
-          <label class="block text-[9px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Notas</label>
+          <label for="gf-notes" class="block text-[11px] tracking-wider text-zinc-600 uppercase font-bold mb-1">Notas</label>
           <input type="text" id="gf-notes" placeholder="Opcional"
             class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-xl py-2.5 px-3 text-xs text-black placeholder-zinc-500 outline-none" />
         </div>
@@ -451,10 +471,10 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
-      <h3 class="text-[10px] tracking-[0.25em] text-zinc-600 uppercase font-extrabold">Acceso de Administradores</h3>
+      <h3 class="text-[11px] tracking-[0.25em] text-zinc-600 uppercase font-extrabold">Acceso de Administradores</h3>
       <p class="text-xs text-zinc-700 leading-relaxed">Entrá con tu cuenta de Google autorizada<br>(José, Cata, Seba o Mari).</p>
       <div id="google-btn-container" class="flex justify-center min-h-[44px]"></div>
-      <p id="admin-login-status" class="text-[10px] text-zinc-500 leading-relaxed"></p>
+      <p id="admin-login-status" class="text-[11px] text-zinc-500 leading-relaxed"></p>
     </div>
   </div>
 
@@ -467,7 +487,7 @@
     <div id="guest-view-banner" class="hidden mb-4 p-3 rounded-2xl bg-amber-500/10 border-2 border-amber-600 flex items-center justify-between gap-3">
       <p class="text-[11px] text-amber-800 font-bold leading-snug">👁 Estás viendo la app como invitado.</p>
       <button onclick="toggleGuestView()"
-        class="px-3.5 py-2 rounded-xl bg-black text-white font-extrabold text-[9px] tracking-wider uppercase transition active:scale-95 shrink-0">
+        class="px-3.5 py-2 rounded-xl bg-black text-white font-extrabold text-[11px] tracking-wider uppercase transition active:scale-95 shrink-0">
         Volver a admin
       </button>
     </div>
@@ -492,7 +512,7 @@
         <span id="user-display-code" class="hidden"></span>
 
         <!-- Ver el instructivo paso a paso -->
-        <button id="btn-info" onclick="openTutorial()" title="Ver el instructivo"
+        <button id="btn-info" onclick="openTutorial()" title="Ver el instructivo" aria-label="Ver el instructivo"
           class="w-11 h-11 rounded-full bg-pink-50 text-fiestaDark flex items-center justify-center transition active:scale-95 shrink-0">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -500,12 +520,12 @@
         </button>
 
         <!-- Cambiar entre tema claro y oscuro -->
-        <button id="btn-theme" onclick="toggleTheme()" title="Tema claro u oscuro"
+        <button id="btn-theme" onclick="toggleTheme()" title="Tema claro u oscuro" aria-label="Tema claro u oscuro"
           class="w-11 h-11 rounded-full bg-pink-50 flex items-center justify-center text-xl transition active:scale-95 shrink-0">
           <span id="theme-toggle-icon">🌙</span>
         </button>
 
-        <button onclick="logout()" title="Salir"
+        <button onclick="logout()" title="Salir" aria-label="Salir"
           class="hidden w-11 h-11 rounded-full bg-pink-50 text-pink-400 hover:text-fiestaDark flex items-center justify-center transition active:scale-95 shrink-0">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -514,7 +534,7 @@
 
         <!-- Menú: navegación y salir de sesión -->
         <div class="relative shrink-0">
-          <button id="btn-menu" onclick="toggleMenu(event)" title="Menú"
+          <button id="btn-menu" onclick="toggleMenu(event)" title="Menú" aria-label="Menú"
             class="w-11 h-11 rounded-full bg-pink-50 text-fiestaDark flex items-center justify-center transition active:scale-95">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -644,6 +664,7 @@
               type="text"
               id="spotify-input"
               oninput="searchSpotify()"
+              aria-label="Buscar una canción para votar"
               placeholder="Buscá una canción…"
               class="w-full bg-white border-2 border-pink-200 focus:border-fiesta rounded-full py-3 pl-10 pr-4 text-base text-black placeholder-zinc-400 outline-none transition-all duration-300 shadow-sm"
             />
@@ -657,7 +678,7 @@
         <!-- Solapas: tu propio ranking y el de Spotify Argentina, bien separados -->
         <div id="rankings-tabs" class="flex gap-2">
           <button id="btn-ranking-personal" type="button" onclick="setRankingTab('personal')"
-            class="flex-1 px-2 pt-3 pb-2.5 text-center text-sm font-extrabold leading-tight rounded-t-2xl border-b-4 transition border-pink-100 text-zinc-400">
+            class="flex-1 px-2 pt-3 pb-2.5 text-center text-sm font-extrabold leading-tight rounded-t-2xl border-b-4 transition border-pink-100 text-zinc-500">
             🏆 Tus más escuchadas
           </button>
           <button id="btn-ranking-arg" type="button" onclick="setRankingTab('arg')"
@@ -670,7 +691,7 @@
         <div id="top-tracks-section" class="space-y-3 hidden">
           <div class="flex items-baseline gap-2 flex-wrap">
             <p class="text-sm text-zinc-500 font-medium">Lo que más escuchás en tu Spotify</p>
-            <span id="top-tracks-count" class="text-zinc-400 font-mono text-xs"></span>
+            <span id="top-tracks-count" class="text-zinc-500 font-mono text-xs"></span>
           </div>
           <div id="top-tracks-filters" class="p-1.5 bg-pink-50 rounded-full flex gap-1">
             <button id="btn-top-range-short_term" onclick="setTopTracksRange('short_term')"
@@ -695,7 +716,7 @@
         <div id="arg-top-section" class="space-y-3">
           <div class="flex items-baseline gap-2 flex-wrap">
             <p class="text-sm text-zinc-500 font-medium">Lo más escuchado del país 🇦🇷</p>
-            <span id="arg-top-count" class="text-zinc-400 font-mono text-xs"></span>
+            <span id="arg-top-count" class="text-zinc-500 font-mono text-xs"></span>
           </div>
           <div class="p-1.5 bg-pink-50 rounded-full flex gap-1">
             <button id="btn-arg-range-short_term" onclick="setArgTopRange('short_term')"
@@ -729,12 +750,12 @@
           </div>
           <div>
             <h3 id="profile-name" class="text-base font-bold text-zinc-800">-</h3>
-            <p class="text-[10px] text-zinc-500">Invitación: <span id="profile-code" class="font-mono text-fiestaDark tracking-wide uppercase">-</span></p>
+            <p class="text-[11px] text-zinc-500">Invitación: <span id="profile-code" class="font-mono text-fiestaDark tracking-wide uppercase">-</span></p>
           </div>
         </div>
         <div class="text-right">
           <span id="profile-contributions" class="text-2xl font-black text-fiestaDark font-mono block leading-none">0</span>
-          <span class="text-[9px] text-zinc-500 font-bold">Mis votos</span>
+          <span class="text-[11px] text-zinc-500 font-bold">Mis votos</span>
         </div>
       </div>
 
@@ -791,7 +812,7 @@
 
         <div id="dj-pending-list" class="space-y-2"></div>
 
-        <h4 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pt-4">Ya sonaron</h4>
+        <h4 class="text-[11px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pt-4">Ya sonaron</h4>
         <div id="dj-played-list" class="space-y-1.5"></div>
       </div>
     </div>
@@ -800,7 +821,7 @@
     <!-- Barra compacta fija abajo; el botón ⌃ la agranda al formato grande -->
     <div id="spotify-player" class="fixed left-0 right-0 z-40 w-full hidden" style="bottom: 0;">
       <div style="overflow:hidden; box-shadow:0 -8px 30px rgba(0,0,0,0.28); padding-bottom: env(safe-area-inset-bottom); background:#000;">
-        <button onclick="togglePlayerSize()" id="player-size-btn" title="Agrandar o achicar el reproductor"
+        <button onclick="togglePlayerSize()" id="player-size-btn" title="Agrandar o achicar el reproductor" aria-label="Agrandar o achicar el reproductor"
           class="sin-borde w-full flex items-center justify-center gap-1.5 py-1 text-white/70 hover:text-white text-[11px] font-semibold transition">
           <svg id="player-size-icon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
           <span id="player-size-label">Ver más grande</span>
@@ -821,7 +842,7 @@
     <div class="bg-white rounded-3xl p-6 shadow-2xl border border-pink-100 max-h-[82vh] overflow-y-auto no-scrollbar">
       <div class="flex items-start justify-between gap-3">
         <h3 id="tutorial-title" class="text-xl font-extrabold text-zinc-900 leading-tight"></h3>
-        <button onclick="dismissTutorial()" title="Cerrar" class="sin-borde text-zinc-400 text-3xl leading-none -mt-2 shrink-0">&times;</button>
+        <button onclick="dismissTutorial()" title="Cerrar" aria-label="Cerrar" class="sin-borde text-zinc-500 text-3xl leading-none -mt-2 shrink-0">&times;</button>
       </div>
       <p id="tutorial-text" class="text-base text-zinc-600 mt-3 leading-relaxed"></p>
       <div class="flex items-center justify-between mt-6 gap-3 flex-wrap">
@@ -2140,7 +2161,7 @@
       const base = "flex-1 px-2 pt-3 pb-2.5 text-center text-sm font-extrabold leading-tight rounded-t-2xl border-b-4 transition";
       return active
         ? base + " border-fiesta bg-pink-50 text-fiestaDark"
-        : base + " border-pink-100 text-zinc-400";
+        : base + " border-pink-100 text-zinc-500";
     }
 
     function syncRankingTabButtons(which) {
@@ -2238,7 +2259,7 @@
                   Es un toque: reconectá tu cuenta y listo.
                 </p>
                 <button onclick="reauthorizeSpotify()"
-                  class="px-4 py-2 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[10px] tracking-wide transition active:scale-95">
+                  class="px-4 py-2 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-extrabold text-[11px] tracking-wide transition active:scale-95">
                   RECONECTAR SPOTIFY
                 </button>
               </div>`;
@@ -2247,7 +2268,7 @@
               <div class="p-5 text-center bg-zinc-50/80 rounded-2xl border-2 border-zinc-400 space-y-2.5">
                 <p class="text-[11px] text-zinc-600">No se pudo cargar tu ranking.</p>
                 <button onclick="renderTopTracks()"
-                  class="px-4 py-2 rounded-xl bg-black text-white font-extrabold text-[10px] tracking-wide transition active:scale-95">
+                  class="px-4 py-2 rounded-xl bg-black text-white font-extrabold text-[11px] tracking-wide transition active:scale-95">
                   REINTENTAR
                 </button>
               </div>`;
@@ -2288,7 +2309,7 @@
               <span class="w-8 text-center text-lg font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
               <div class="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
                 <img src="${safeImg(track.coverUrl)}" alt="Tapa de ${escapeHtml(track.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover" />
-                <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+                <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" aria-label="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                   <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
@@ -2303,7 +2324,7 @@
 
             <button
               onclick="${votedByMe ? `voteSong('${existing.id}')` : `addSongFromTop(${index})`}"
-              title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
+              title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}" aria-label="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
               class="w-12 h-12 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
             >
               <svg class="w-6 h-6 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2425,7 +2446,7 @@
             <div class="p-5 text-center bg-zinc-50/80 rounded-2xl border-2 border-zinc-400 space-y-2.5">
               <p class="text-[11px] text-zinc-600">No se pudo cargar el top de Argentina.</p>
               <button onclick="renderArgTop()"
-                class="px-4 py-2 rounded-xl bg-black text-white font-extrabold text-[10px] tracking-wide transition active:scale-95">
+                class="px-4 py-2 rounded-xl bg-black text-white font-extrabold text-[11px] tracking-wide transition active:scale-95">
                 REINTENTAR
               </button>
             </div>`;
@@ -2465,7 +2486,7 @@
               <span class="w-8 text-center text-lg font-black ${index < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${index + 1}</span>
               <div class="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 flex-none">
                 <img src="${safeImg(track.coverUrl)}" alt="Tapa de ${escapeHtml(track.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover" />
-                <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+                <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" aria-label="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                   <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
                   </svg>
@@ -2480,7 +2501,7 @@
 
             <button
               onclick="${votedByMe ? `voteSong('${existing.id}')` : `addSongFromArgTop(${index})`}"
-              title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
+              title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}" aria-label="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
               class="w-12 h-12 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
             >
               <svg class="w-6 h-6 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2933,7 +2954,7 @@
         const grupos = guestGroupList();
         let chips = `
           <button onclick="setGuestGroupFilter('')"
-            class="px-3 py-1.5 rounded-full border text-[10px] font-extrabold uppercase tracking-wide transition ${guestGroupFilter === '' ? 'btn-fiesta border-transparent' : 'bg-white border-zinc-200 text-zinc-600'}">
+            class="px-3 py-1.5 rounded-full border text-[11px] font-extrabold uppercase tracking-wide transition ${guestGroupFilter === '' ? 'btn-fiesta border-transparent' : 'bg-white border-zinc-200 text-zinc-600'}">
             Todos (${guests.length})
           </button>`;
         grupos.forEach(gr => {
@@ -2941,7 +2962,7 @@
           const active = guestGroupFilter === gr;
           chips += `
             <button onclick="setGuestGroupFilter('${gr.replace(/'/g, "\\'")}')"
-              class="px-3 py-1.5 rounded-full border text-[10px] font-extrabold uppercase tracking-wide transition ${active ? 'btn-fiesta border-transparent' : groupTagClass(gr)}">
+              class="px-3 py-1.5 rounded-full border text-[11px] font-extrabold uppercase tracking-wide transition ${active ? 'btn-fiesta border-transparent' : groupTagClass(gr)}">
               ${escapeHtml(gr)} (${count})
             </button>`;
         });
@@ -2969,7 +2990,7 @@
       filtered.forEach(g => {
         if (g.grupo !== lastGroup) {
           lastGroup = g.grupo;
-          html += `<h4 class="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pt-3 pb-1">${escapeHtml(g.grupo)}</h4>`;
+          html += `<h4 class="text-[11px] tracking-[0.2em] text-zinc-500 uppercase font-extrabold pt-3 pb-1">${escapeHtml(g.grupo)}</h4>`;
         }
 
         const partes = [];
@@ -2988,14 +3009,14 @@
             <div class="flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <h5 class="text-sm font-extrabold text-zinc-900 truncate">${escapeHtml(g.name)}</h5>
-                <p class="text-[10px] text-zinc-500">${g.total} pers.${partes.length ? ' · ' + partes.join(' · ') : ''}</p>
+                <p class="text-[11px] text-zinc-500">${g.total} pers.${partes.length ? ' · ' + partes.join(' · ') : ''}</p>
               </div>
               <div class="flex items-center gap-2 shrink-0">
-                <button onclick="editGuestCode('${g.id}')" title="Tocar para editar el código"
+                <button onclick="editGuestCode('${g.id}')" title="Tocar para editar el código" aria-label="Tocar para editar el código"
                   class="px-2.5 py-1.5 rounded-lg bg-pink-50 text-fiestaDark font-black font-mono text-sm tracking-[0.2em]">
                   ${escapeHtml(g.code)}
                 </button>
-                <button onclick="showGuestQr('${g.id}')" title="Mostrar QR"
+                <button onclick="showGuestQr('${g.id}')" title="Mostrar QR" aria-label="Mostrar QR"
                   class="p-2 rounded-lg btn-fiesta transition active:scale-95">
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-5 0h3v3h-2v2h-1v-5zm3 3h2v2h3v3h-5v-2h-1v-2h1v-1zm2 5v1h-2v-1h2z"/>
@@ -3005,29 +3026,29 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <button onclick="toggleGuestStd('${g.id}')"
-                class="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wide transition ${g.saveTheDate ? 'bg-pink-50 border-pink-200 text-fiestaDark' : 'bg-zinc-100 border-zinc-200 text-zinc-500'}">
+                class="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold uppercase tracking-wide transition ${g.saveTheDate ? 'bg-pink-50 border-pink-200 text-fiestaDark' : 'bg-zinc-100 border-zinc-200 text-zinc-500'}">
                 ✉️ Save the date ${g.saveTheDate ? '✔' : '—'}
               </button>
               <button onclick="cycleGuestConfirm('${g.id}')"
-                class="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wide transition ${CONF_STYLES[g.confirmed] || CONF_STYLES.pendiente}">
+                class="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold uppercase tracking-wide transition ${CONF_STYLES[g.confirmed] || CONF_STYLES.pendiente}">
                 ${CONF_LABELS[g.confirmed] || CONF_LABELS.pendiente}
               </button>
               <button onclick="openGuestForm('${g.id}')"
-                class="px-2.5 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-600 text-[9px] font-bold uppercase tracking-wide transition">
+                class="px-2.5 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-600 text-[11px] font-bold uppercase tracking-wide transition">
                 ✏️ Editar
               </button>
-              <button onclick="deleteGuest('${g.id}')"
-                class="px-2.5 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-red-400 text-[9px] font-bold uppercase tracking-wide transition">
-                🗑️
+              <button onclick="deleteGuest('${g.id}')" aria-label="Borrar invitado ${escapeHtml(g.name)}"
+                class="px-2.5 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-red-400 text-[11px] font-bold uppercase tracking-wide transition">
+                <span aria-hidden="true">🗑️</span>
               </button>
-              ${g.notes ? `<span class="text-[10px] text-amber-700/80 italic w-full">${escapeHtml(g.notes)}</span>` : ''}
+              ${g.notes ? `<span class="text-[11px] text-amber-700/80 italic w-full">${escapeHtml(g.notes)}</span>` : ''}
             </div>
           </div>
         `;
       });
 
       document.getElementById('guests-list').innerHTML = html ||
-        '<p class="p-8 text-center text-zinc-400 text-xs font-serif">No se encontraron invitados con esa búsqueda.</p>';
+        '<p class="p-8 text-center text-zinc-500 text-xs font-serif">No se encontraron invitados con esa búsqueda.</p>';
     }
 
     function editGuestCode(guestId) {
@@ -3479,7 +3500,7 @@
 
       const listBox = document.getElementById('mesas-list');
       if (mesas.length === 0) {
-        listBox.innerHTML = '<p class="p-8 text-center text-zinc-400 text-xs font-serif">Todavía no creaste ninguna mesa. Tocá “Agregar mesa”.</p>';
+        listBox.innerHTML = '<p class="p-8 text-center text-zinc-500 text-xs font-serif">Todavía no creaste ninguna mesa. Tocá “Agregar mesa”.</p>';
       } else {
         listBox.innerHTML = mesas.map(mesa => {
           const seated = mesaSeated(mesa);
@@ -3488,30 +3509,30 @@
             const g = guestById(id);
             if (!g) return '';
             return `
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-pink-100 text-[10px] font-bold text-zinc-800">
-                ${escapeHtml(g.name)} <span class="text-zinc-400 font-mono">${g.total}</span>
-                <button onclick="removeGuestFromMesa('${mesa.id}','${g.id}')" title="Quitar de la mesa"
-                  class="sin-borde -mr-1 w-4 h-4 flex items-center justify-center rounded-full bg-zinc-200 text-zinc-600 hover:text-red-500 text-[10px] leading-none">×</button>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-pink-100 text-[11px] font-bold text-zinc-800">
+                ${escapeHtml(g.name)} <span class="text-zinc-500 font-mono">${g.total}</span>
+                <button onclick="removeGuestFromMesa('${mesa.id}','${g.id}')" title="Quitar de la mesa" aria-label="Quitar de la mesa"
+                  class="sin-borde -mr-1 w-4 h-4 flex items-center justify-center rounded-full bg-zinc-200 text-zinc-600 hover:text-red-500 text-[11px] leading-none">×</button>
               </span>`;
           }).join('');
 
           return `
             <div class="p-3 card-fiesta rounded-2xl space-y-2.5">
               <div class="flex items-center justify-between gap-2">
-                <button onclick="renameMesa('${mesa.id}')" title="Cambiar el nombre"
+                <button onclick="renameMesa('${mesa.id}')" title="Cambiar el nombre" aria-label="Cambiar el nombre"
                   class="sin-borde text-left min-w-0 flex-1">
                   <h5 class="text-sm font-extrabold text-zinc-900 truncate">${escapeHtml(mesa.name)} ✏️</h5>
                 </button>
-                <button onclick="setMesaCapacity('${mesa.id}')" title="Cambiar capacidad"
-                  class="px-2.5 py-1 rounded-lg border text-[10px] font-extrabold font-mono ${lleno ? 'bg-red-100 border-red-300 text-red-700' : 'bg-emerald-100 border-emerald-300 text-emerald-700'}">
+                <button onclick="setMesaCapacity('${mesa.id}')" title="Cambiar capacidad" aria-label="Cambiar capacidad"
+                  class="px-2.5 py-1 rounded-lg border text-[11px] font-extrabold font-mono ${lleno ? 'bg-red-100 border-red-300 text-red-700' : 'bg-emerald-100 border-emerald-300 text-emerald-700'}">
                   ${seated}/${mesa.capacity}
                 </button>
-                <button onclick="deleteMesa('${mesa.id}')" title="Borrar mesa"
-                  class="px-2.5 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-red-500 text-[10px]">🗑️</button>
+                <button onclick="deleteMesa('${mesa.id}')" title="Borrar mesa" aria-label="Borrar mesa"
+                  class="px-2.5 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-red-500 text-[11px]">🗑️</button>
               </div>
 
               <div class="flex flex-wrap gap-1.5">
-                ${chips || '<span class="text-[10px] text-zinc-400 italic">Mesa vacía</span>'}
+                ${chips || '<span class="text-[11px] text-zinc-500 italic">Mesa vacía</span>'}
               </div>
 
               <select onchange="assignGuestToMesa('${mesa.id}', this.value); this.value='';"
@@ -3529,7 +3550,7 @@
         unseatedBox.innerHTML = '<span class="text-[11px] text-emerald-700 font-bold">¡Todos los invitados tienen mesa! 🎉</span>';
       } else {
         unseatedBox.innerHTML = libres.map(g => `
-          <span class="px-2.5 py-1 rounded-full border-2 ${groupTagClass(g.grupo)} text-[10px] font-bold">
+          <span class="px-2.5 py-1 rounded-full border-2 ${groupTagClass(g.grupo)} text-[11px] font-bold">
             ${escapeHtml(g.name)} <span class="opacity-60 font-mono">${g.total}</span>
           </span>
         `).join('');
@@ -3643,7 +3664,7 @@
         inner = `
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <span class="text-sm font-bold text-emerald-600">✅ ¡Confirmaste tu asistencia! Te esperamos 🎉</span>
-            <button onclick="setMyRsvp('no')" class="sin-borde text-xs text-zinc-400 underline">No voy a poder ir</button>
+            <button onclick="setMyRsvp('no')" class="sin-borde text-xs text-zinc-500 underline">No voy a poder ir</button>
           </div>`;
       } else if (conf === 'no') {
         inner = `
@@ -3711,15 +3732,15 @@
         <div class="grid grid-cols-3 gap-2">
           <div class="card-fiesta rounded-2xl p-3 text-center">
             <span class="text-xl font-black text-fiestaDark font-mono block">${songs.length}</span>
-            <span class="text-[9px] text-zinc-500 font-bold">Temas</span>
+            <span class="text-[11px] text-zinc-500 font-bold">Temas</span>
           </div>
           <div class="card-fiesta rounded-2xl p-3 text-center">
             <span class="text-xl font-black text-fiestaDark font-mono block">${totalVotes}</span>
-            <span class="text-[9px] text-zinc-500 font-bold">Votos</span>
+            <span class="text-[11px] text-zinc-500 font-bold">Votos</span>
           </div>
           <div class="card-fiesta rounded-2xl p-3 text-center">
             <span class="text-xl font-black text-fiestaDark font-mono block">${guests.length}</span>
-            <span class="text-[9px] text-zinc-500 font-bold">Votantes</span>
+            <span class="text-[11px] text-zinc-500 font-bold">Votantes</span>
           </div>
         </div>
 
@@ -3728,10 +3749,10 @@
             🗳 Votos por invitado (${guests.length})
           </summary>
           <div class="px-4 pb-3 space-y-2 max-h-56 overflow-y-auto no-scrollbar">
-            ${guests.length === 0 ? '<p class="text-xs text-zinc-400 font-serif">Todavía no hay votos.</p>' : guests.map(g => `
+            ${guests.length === 0 ? '<p class="text-xs text-zinc-500 font-serif">Todavía no hay votos.</p>' : guests.map(g => `
               <div class="border-t border-zinc-100 pt-2">
                 <p class="text-xs font-bold text-zinc-800">${escapeHtml(g.name)} <span class="text-zinc-500 font-mono">· ${g.titles.length} ${g.titles.length === 1 ? 'voto' : 'votos'}</span></p>
-                <p class="text-[10px] text-zinc-500 leading-relaxed">${escapeHtml(g.titles.join(' · '))}</p>
+                <p class="text-[11px] text-zinc-500 leading-relaxed">${escapeHtml(g.titles.join(' · '))}</p>
               </div>
             `).join('')}
           </div>
@@ -3742,10 +3763,10 @@
             💌 Dedicatorias (${dedications.length})
           </summary>
           <div class="px-4 pb-3 space-y-2 max-h-56 overflow-y-auto no-scrollbar">
-            ${dedications.length === 0 ? '<p class="text-xs text-zinc-400 font-serif">Todavía no llegaron dedicatorias.</p>' : dedications.map(d => `
+            ${dedications.length === 0 ? '<p class="text-xs text-zinc-500 font-serif">Todavía no llegaron dedicatorias.</p>' : dedications.map(d => `
               <div class="border-t border-zinc-100 pt-2">
                 <p class="text-xs text-zinc-800 leading-relaxed">“${escapeHtml(d.message)}”</p>
-                <p class="text-[10px] text-zinc-500 mt-0.5">— ${escapeHtml(d.name)}, votando <span class="italic">${escapeHtml(d.song)}</span></p>
+                <p class="text-[11px] text-zinc-500 mt-0.5">— ${escapeHtml(d.name)}, votando <span class="italic">${escapeHtml(d.song)}</span></p>
               </div>
             `).join('')}
           </div>
@@ -3767,7 +3788,7 @@
           <div class="p-5 rounded-[28px] flex items-center justify-between gap-4 text-white"
                style="background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%); box-shadow: 0 12px 30px rgba(236,72,153,0.35);">
             <div class="flex items-center gap-4 min-w-0">
-              <button onclick="toggleTrackPlayback('${top.id}')" title="Escuchar"
+              <button onclick="toggleTrackPlayback('${top.id}')" title="Escuchar" aria-label="Escuchar"
                 class="sin-borde relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-white/20 shadow-lg">
                 <img src="${safeImg(top.coverUrl)}" alt="Tapa de ${escapeHtml(top.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
                 <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
@@ -3789,7 +3810,7 @@
           </div>
         `;
       } else {
-        topBanner.innerHTML = `<p class="p-4 text-center text-zinc-400 text-xs">Agregá música para coronar el hit de la noche 👑</p>`;
+        topBanner.innerHTML = `<p class="p-4 text-center text-zinc-500 text-xs">Agregá música para coronar el hit de la noche 👑</p>`;
       }
 
       const listContainer = document.getElementById('songs-list-container');
@@ -3797,7 +3818,7 @@
 
       if (sorted.length === 0) {
         listContainer.innerHTML = `
-          <div class="text-center py-12 text-zinc-400">
+          <div class="text-center py-12 text-zinc-500">
             <p class="text-sm">Todavía no hay temas pedidos.<br>En cuanto los invitados voten, acá aparece el ranking. 🎶</p>
           </div>
         `;
@@ -3812,7 +3833,7 @@
           <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition flex-nowrap animate-fadeIn">
             <div class="flex items-center gap-3.5 min-w-0 flex-1">
               <span class="w-8 text-center text-lg font-black ${idx < 3 ? 'text-fiesta' : 'text-zinc-300'} font-mono shrink-0">${idx + 1}</span>
-              <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar"
+              <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" aria-label="Escuchar"
                 class="sin-borde relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 bg-zinc-100 flex-none">
                 <img src="${safeImg(song.coverUrl)}" alt="Tapa de ${escapeHtml(song.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover ${isPlaying ? 'animate-spin' : ''}" style="animation-duration: 8s;" />
                 <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
@@ -3831,9 +3852,9 @@
               <div class="min-w-0 flex-1">
                 <h4 class="text-base font-extrabold text-zinc-800 truncate pr-2 leading-tight">${escapeHtml(song.title)}</h4>
                 <p class="text-sm text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
-                <div class="flex items-center gap-1.5 text-xs text-zinc-400 truncate mt-1">
+                <div class="flex items-center gap-1.5 text-xs text-zinc-500 truncate mt-1">
                   <span class="truncate">Pedida por ${escapeHtml(song.addedBy)}</span>
-                  ${song.playedAt ? '<span class="text-[10px] font-black bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full uppercase shrink-0">Ya sonó</span>' : ''}
+                  ${song.playedAt ? '<span class="text-[11px] font-black bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full uppercase shrink-0">Ya sonó</span>' : ''}
                 </div>
               </div>
             </div>
@@ -3841,7 +3862,7 @@
             <!-- Corazón de voto -->
             <button
               onclick="voteSong('${song.id}')"
-              title="${isVoted ? 'Quitar mi voto' : 'Votar este tema'}"
+              title="${isVoted ? 'Quitar mi voto' : 'Votar este tema'}" aria-label="${isVoted ? 'Quitar mi voto' : 'Votar este tema'}"
               class="flex flex-col items-center justify-center gap-0.5 px-4 py-3 rounded-2xl transition duration-300 active:scale-95 shrink-0 flex-none ${
                 isVoted
                   ? 'btn-fiesta'
@@ -3989,7 +4010,7 @@
           : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />';
 
         const playOverlay = track.genre === 'Spotify' ? `
-          <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
+          <button onclick="openSpotifyPlayer('${track.id}')" title="Escuchar" aria-label="Escuchar" class="sin-borde absolute inset-0 bg-black/30 flex items-center justify-center text-white">
             <svg class="w-5 h-5 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z"/>
             </svg>
@@ -4012,7 +4033,7 @@
 
             <button
               onclick="${votedByMe ? `voteSong('${existing.id}')` : `addSongFromSearch(${index})`}"
-              title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
+              title="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}" aria-label="${votedByMe ? 'Tocá para quitar tu voto' : (existing ? 'Sumar mi voto' : 'Pedir y votar')}"
               class="w-12 h-12 rounded-full flex items-center justify-center transition shrink-0 ${votedByMe ? 'bg-pink-100 text-fiesta' : 'btn-fiesta'}"
             >
               <svg class="w-6 h-6 ${votedByMe ? '' : 'fill-current'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -4064,7 +4085,7 @@
           return `
             <div class="card-fiesta flex items-center justify-between gap-4 p-4 rounded-3xl transition">
               <div class="flex items-center gap-3.5 min-w-0">
-                <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" class="sin-borde relative w-12 h-12 rounded-2xl overflow-hidden bg-zinc-200 flex-none">
+                <button onclick="toggleTrackPlayback('${song.id}')" title="Escuchar" aria-label="Escuchar" class="sin-borde relative w-12 h-12 rounded-2xl overflow-hidden bg-zinc-200 flex-none">
                   <img src="${safeImg(song.coverUrl)}" alt="Tapa de ${escapeHtml(song.title)}" loading="lazy" decoding="async" class="w-full h-full object-cover" />
                   <span class="absolute inset-0 bg-black/30 flex items-center justify-center text-white">
                     <svg class="w-6 h-6 drop-shadow" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -4078,7 +4099,7 @@
 
               <button
                 onclick="voteSong('${song.id}')"
-                title="Quitar mi voto"
+                title="Quitar mi voto" aria-label="Quitar mi voto"
                 class="flex items-center gap-1.5 px-4 py-3 rounded-2xl btn-fiesta transition active:scale-95 shrink-0"
               >
                 <svg class="w-6 h-6 fill-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -4110,12 +4131,13 @@
               <img src="${safeImg(song.coverUrl)}" alt="Tapa de ${escapeHtml(song.title)}" loading="lazy" decoding="async" class="w-9 h-9 rounded-lg object-cover bg-zinc-200" />
               <div class="min-w-0">
                 <h4 class="text-xs font-bold text-zinc-800 truncate">${escapeHtml(song.title)}</h4>
-                <p class="text-[9px] text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
+                <p class="text-[11px] text-zinc-500 truncate">${escapeHtml(song.artist)}</p>
               </div>
             </div>
 
-            <button 
+            <button
               onclick="deleteMySong('${song.id}')"
+              aria-label="Quitar mi tema ${escapeHtml(song.title)}"
               class="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition active:scale-95"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -4216,7 +4238,7 @@
 
       const pendingBox = document.getElementById('dj-pending-list');
       pendingBox.innerHTML = pending.length === 0
-        ? '<p class="p-8 text-center text-zinc-400 text-sm font-serif">No quedan temas pendientes. ¡Sonó todo! 🎉</p>'
+        ? '<p class="p-8 text-center text-zinc-500 text-sm font-serif">No quedan temas pendientes. ¡Sonó todo! 🎉</p>'
         : pending.map((song, i) => `
           <div class="flex items-center justify-between gap-4 p-4 card-fiesta rounded-2xl">
             <div class="flex items-center gap-4 min-w-0">
@@ -4229,7 +4251,7 @@
             <div class="flex items-center gap-3 shrink-0">
               <span class="text-xl font-black text-fiestaDark font-mono">${song.votes} 💖</span>
               <button onclick="markSongPlayed('${song.id}', true)"
-                class="px-4 py-2.5 rounded-full btn-fiesta font-extrabold text-[10px] tracking-wider uppercase transition active:scale-95">
+                class="px-4 py-2.5 rounded-full btn-fiesta font-extrabold text-[11px] tracking-wider uppercase transition active:scale-95">
                 Ya sonó
               </button>
             </div>
@@ -4238,15 +4260,15 @@
 
       const playedBox = document.getElementById('dj-played-list');
       playedBox.innerHTML = played.length === 0
-        ? '<p class="text-xs text-zinc-400 font-serif">Ninguna todavía.</p>'
+        ? '<p class="text-xs text-zinc-500 font-serif">Ninguna todavía.</p>'
         : played.map(song => `
           <div class="flex items-center justify-between gap-3 p-2.5 bg-zinc-50/40 border border-pink-100 rounded-xl opacity-60">
             <div class="min-w-0">
               <h5 class="text-xs font-bold text-zinc-700 truncate line-through">${escapeHtml(song.title)}</h5>
-              <p class="text-[10px] text-zinc-400 truncate">${escapeHtml(song.artist)} · ${song.votes} votos</p>
+              <p class="text-[11px] text-zinc-500 truncate">${escapeHtml(song.artist)} · ${song.votes} votos</p>
             </div>
             <button onclick="markSongPlayed('${song.id}', false)"
-              class="px-3 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-black font-bold text-[9px] tracking-wider uppercase transition shrink-0">
+              class="px-3 py-1.5 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-black font-bold text-[11px] tracking-wider uppercase transition shrink-0">
               Volver
             </button>
           </div>
